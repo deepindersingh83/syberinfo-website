@@ -209,6 +209,77 @@ export default buildConfig({
         { name: "order", type: "number", defaultValue: 0 },
       ],
     },
+    {
+      slug: "posts",
+      labels: { singular: "Post", plural: "Blog Posts" },
+      admin: {
+        useAsTitle: "title",
+        defaultColumns: ["title", "category", "date"],
+        group: "Content",
+      },
+      access: { read: () => true },
+      defaultSort: "-date",
+      fields: [
+        { name: "title", type: "text", required: true },
+        {
+          name: "slug",
+          type: "text",
+          required: true,
+          unique: true,
+          admin: { description: "URL segment, e.g. why-website-speed-matters" },
+        },
+        {
+          name: "excerpt",
+          type: "textarea",
+          required: true,
+          admin: { description: "Short summary shown on cards & meta description" },
+        },
+        { name: "category", type: "text" },
+        { name: "author", type: "text", defaultValue: "SyberInfo Team" },
+        { name: "date", type: "date", required: true },
+        {
+          name: "readMins",
+          type: "number",
+          defaultValue: 4,
+          admin: { description: "Estimated read time in minutes" },
+        },
+        {
+          name: "body",
+          type: "textarea",
+          required: true,
+          admin: { description: "Article body. Separate paragraphs with a blank line." },
+        },
+      ],
+    },
+    {
+      slug: "leads",
+      labels: { singular: "Enquiry", plural: "Enquiries" },
+      admin: {
+        useAsTitle: "name",
+        defaultColumns: ["name", "email", "service", "status", "createdAt"],
+        group: "Enquiries",
+      },
+      // Submitted by the public contact form; only admins can read/manage.
+      access: { create: () => true },
+      fields: [
+        { name: "name", type: "text", required: true },
+        { name: "email", type: "email", required: true },
+        { name: "phone", type: "text" },
+        { name: "service", type: "text" },
+        { name: "message", type: "textarea", required: true },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "new",
+          options: [
+            { label: "New", value: "new" },
+            { label: "In progress", value: "in-progress" },
+            { label: "Won", value: "won" },
+            { label: "Closed", value: "closed" },
+          ],
+        },
+      ],
+    },
   ],
   globals: [
     {
@@ -248,6 +319,7 @@ export default buildConfig({
       services: seedServices,
       products: seedProducts,
       testimonials: seedTestimonials,
+      posts: seedPosts,
       stats: seedStats,
       steps: seedSteps,
     } = await import("@/lib/data");
@@ -324,6 +396,26 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedTestimonials.length} testimonials`);
+    }
+
+    const { totalDocs: postCount } = await payload.count({ collection: "posts" });
+    if (postCount === 0) {
+      for (const p of seedPosts) {
+        await payload.create({
+          collection: "posts",
+          data: {
+            title: p.title,
+            slug: p.slug,
+            excerpt: p.excerpt,
+            category: p.category,
+            author: p.author,
+            date: p.date,
+            readMins: p.readMins,
+            body: p.body,
+          },
+        });
+      }
+      payload.logger.info(`Seeded ${seedPosts.length} posts`);
     }
 
     // Seed the homepage content global (stats + process steps) if empty.

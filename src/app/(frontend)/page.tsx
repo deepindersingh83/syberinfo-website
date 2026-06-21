@@ -7,19 +7,23 @@ import {
   getTestimonials,
   getStats,
   getSteps,
+  getPosts,
 } from "@/lib/content";
 import { site } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [services, products, testimonials, stats, steps] = await Promise.all([
-    getServices(),
-    getProducts(),
-    getTestimonials(),
-    getStats(),
-    getSteps(),
-  ]);
+  const [services, products, testimonials, stats, steps, posts] =
+    await Promise.all([
+      getServices(),
+      getProducts(),
+      getTestimonials(),
+      getStats(),
+      getSteps(),
+      getPosts(),
+    ]);
+  const latestPosts = posts.slice(0, 3);
 
   return (
     <>
@@ -280,6 +284,52 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* ───────────────────── Latest insights ───────────────────── */}
+      {latestPosts.length > 0 && (
+        <section className="relative py-24 sm:py-32">
+          <div className="mx-auto max-w-7xl px-5">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <SectionHeading
+                eyebrow="Blog & insights"
+                title={<>From our blog</>}
+                center={false}
+              />
+              <Link
+                href="/blog"
+                className="text-sm font-semibold text-foreground/80 transition-transform hover:translate-x-1"
+              >
+                View all articles →
+              </Link>
+            </div>
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
+              {latestPosts.map((p, i) => (
+                <Reveal key={p.slug} delay={i * 70}>
+                  <Link
+                    href={`/blog/${p.slug}`}
+                    className="group flex h-full flex-col rounded-3xl glass p-7 transition-all hover:-translate-y-1.5 hover:border-white/20"
+                  >
+                    {p.category && (
+                      <span className="text-xs font-semibold text-gradient">
+                        {p.category}
+                      </span>
+                    )}
+                    <h3 className="mt-2 text-lg font-bold leading-snug">
+                      {p.title}
+                    </h3>
+                    <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">
+                      {p.excerpt}
+                    </p>
+                    <span className="mt-4 inline-block text-sm font-semibold text-foreground/80 transition-transform group-hover:translate-x-1">
+                      Read →
+                    </span>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ───────────────────────── CTA ───────────────────────── */}
       <section className="relative px-5 pb-12">

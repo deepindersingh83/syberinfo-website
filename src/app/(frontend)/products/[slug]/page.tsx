@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
 import { Aurora, Eyebrow, ButtonLink } from "@/components/ui";
+import JsonLd, { faqJsonLd, breadcrumbJsonLd } from "@/components/JsonLd";
 import { getProduct, getProducts } from "@/lib/content";
-import { store } from "@/lib/site";
+import { site, store } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,27 @@ export default async function ProductDetailPage({ params }: Params) {
 
   const related = all.filter((p) => p.slug !== product.slug).slice(0, 3);
 
+  const productLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.overview || product.description,
+    brand: { "@type": "Brand", name: site.name },
+    url: `${site.url}/products/${product.slug}`,
+  };
+
   return (
     <div className="relative pt-32 pb-12">
       <Aurora />
+      <JsonLd data={productLd} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", url: site.url },
+          { name: "Products", url: `${site.url}/products` },
+          { name: product.title, url: `${site.url}/products/${product.slug}` },
+        ])}
+      />
+      {product.faqs.length > 0 && <JsonLd data={faqJsonLd(product.faqs)} />}
 
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-5">

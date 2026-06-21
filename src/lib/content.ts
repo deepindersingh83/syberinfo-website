@@ -4,10 +4,12 @@ import {
   services as fallbackServices,
   products as fallbackProducts,
   testimonials as fallbackTestimonials,
+  posts as fallbackPosts,
   stats as fallbackStats,
   steps as fallbackSteps,
   type Service,
   type Product,
+  type Post,
 } from "./data";
 
 type Testimonial = { quote: string; name: string; role: string };
@@ -180,4 +182,75 @@ export async function getTestimonials(): Promise<Testimonial[]> {
       };
     });
   }, fallbackTestimonials);
+}
+
+function mapPost(d: unknown): Post {
+  const doc = d as Record<string, unknown>;
+  return {
+    slug: String(doc.slug ?? ""),
+    title: String(doc.title ?? ""),
+    excerpt: String(doc.excerpt ?? ""),
+    category: String(doc.category ?? ""),
+    author: String(doc.author ?? "SyberInfo Team"),
+    date: String(doc.date ?? ""),
+    readMins: Number(doc.readMins ?? 4),
+    body: String(doc.body ?? ""),
+  } satisfies Post;
+}
+
+export async function getPosts(): Promise<Post[]> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "posts",
+      sort: "-date",
+      limit: 100,
+    });
+    if (!docs.length) return fallbackPosts;
+    return docs.map(mapPost);
+  }, fallbackPosts);
+}
+
+export async function getPost(slug: string): Promise<Post | null> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "posts",
+      where: { slug: { equals: slug } },
+      limit: 1,
+    });
+    if (docs.length) return mapPost(docs[0]);
+    return fallbackPosts.find((p) => p.slug === slug) ?? null;
+  }, fallbackPosts.find((p) => p.slug === slug) ?? null);
+}
+
+export type LeadInput = {
+  name: string;
+  email: string;
+  phone?: string;
+  service?: string;
+  message: string;
+};
+
+/**
+ * Persist a contact-form enquiry to the CMS so it appears under Enquiries in
+ * the admin. Returns true on success; callers should not fail the request if
+ * this returns false (email delivery is the primary channel).
+ */
+export async function saveLead(lead: LeadInput): Promise<boolean> {
+  try {
+    const payload = await getPayload({ config });
+    await payload.create({
+      collection: "leads",
+      data: {
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone,
+        service: lead.service,
+        message: lead.message,
+        status: "new",
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }

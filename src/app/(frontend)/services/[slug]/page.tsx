@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
 import { Aurora, Eyebrow, ButtonLink } from "@/components/ui";
+import JsonLd, { faqJsonLd, breadcrumbJsonLd } from "@/components/JsonLd";
 import { getService, getServices } from "@/lib/content";
+import { site } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +32,29 @@ export default async function ServiceDetailPage({ params }: Params) {
 
   const related = all.filter((s) => s.slug !== service.slug).slice(0, 3);
 
+  const serviceLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: service.title,
+    description: service.overview || service.description,
+    serviceType: service.title,
+    provider: { "@type": "Organization", name: site.name, url: site.url },
+    areaServed: "AU",
+    url: `${site.url}/services/${service.slug}`,
+  };
+
   return (
     <div className="relative pt-32 pb-12">
       <Aurora />
+      <JsonLd data={serviceLd} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", url: site.url },
+          { name: "Services", url: `${site.url}/services` },
+          { name: service.title, url: `${site.url}/services/${service.slug}` },
+        ])}
+      />
+      {service.faqs.length > 0 && <JsonLd data={faqJsonLd(service.faqs)} />}
 
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-5">

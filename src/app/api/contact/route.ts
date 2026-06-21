@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { site } from "@/lib/site";
+import { saveLead } from "@/lib/content";
 
 export const runtime = "nodejs";
 
@@ -99,6 +100,17 @@ export async function POST(req: Request) {
   } else {
     console.info("[contact] New lead (email not configured):", lead);
   }
+
+  // Always store the enquiry in the CMS so it's visible under Enquiries in the
+  // admin, regardless of email configuration. Don't fail the request if this
+  // doesn't work — email is the primary channel.
+  await saveLead({
+    name,
+    email,
+    phone: data.phone?.trim() || undefined,
+    service: data.service?.trim() || undefined,
+    message,
+  });
 
   return NextResponse.json({ ok: true });
 }

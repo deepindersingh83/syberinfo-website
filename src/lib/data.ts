@@ -526,3 +526,70 @@ export const testimonials = [
     role: "Marketing Lead, Services Firm",
   },
 ];
+
+export type Post = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  author: string;
+  date: string; // ISO date
+  readMins: number;
+  body: string; // paragraphs separated by blank lines
+};
+
+export const posts: Post[] = [
+  {
+    slug: "why-website-speed-matters",
+    title: "Why website speed matters (and how to fix a slow site)",
+    excerpt:
+      "A slow website quietly costs you customers and rankings. Here's why speed matters and the practical steps we use to make sites load in under two seconds.",
+    category: "Web Development",
+    author: "SyberInfo Team",
+    date: "2026-05-12",
+    readMins: 5,
+    body: `Every second your website takes to load costs you visitors. Studies consistently show that conversion rates drop sharply for each additional second of load time, and Google uses page speed as a ranking signal. In short: a fast site sells more and ranks higher.
+
+The good news is that most speed problems are fixable. The usual culprits are oversized images, bloated themes and plugins, no caching, and slow hosting.
+
+We start every speed project with a measurement — Core Web Vitals and a full performance audit — so we fix what actually matters instead of guessing. From there we optimise images, enable caching and a CDN, trim unused code, and where needed move the site to faster hosting.
+
+The result is a site that feels instant, keeps visitors engaged, and gives search engines another reason to rank you. If your site feels sluggish, get in touch for a free speed check.`,
+  },
+  {
+    slug: "seo-basics-for-small-business",
+    title: "SEO basics every small business should get right",
+    excerpt:
+      "You don't need a huge budget to start ranking. These SEO fundamentals deliver the biggest wins for small and local businesses.",
+    category: "SEO",
+    author: "SyberInfo Team",
+    date: "2026-04-28",
+    readMins: 6,
+    body: `Search engine optimisation can feel overwhelming, but a handful of fundamentals deliver most of the results for small businesses.
+
+Start with the basics of technical health: a fast, mobile-friendly, secure (HTTPS) website that search engines can easily crawl. If Google can't read your site properly, nothing else matters.
+
+Next, target the right keywords. Think about what your customers actually type when they're ready to buy, and build clear, helpful pages around those terms — one focused page per topic.
+
+Don't overlook local SEO. Claiming and optimising your Google Business Profile, keeping your name, address and phone consistent everywhere, and gathering genuine reviews can put you on the map for nearby searches.
+
+Finally, publish helpful content regularly. Answering your customers' questions builds trust, earns links, and gives you more chances to rank. It compounds over time — which is exactly why SEO is worth starting today.`,
+  },
+  {
+    slug: "google-workspace-vs-microsoft-365",
+    title: "Google Workspace vs Microsoft 365: which is right for you?",
+    excerpt:
+      "Both give your business professional email and productivity tools. Here's a simple way to decide which suits your team.",
+    category: "Cloud",
+    author: "SyberInfo Team",
+    date: "2026-04-10",
+    readMins: 4,
+    body: `Professional email on your own domain is one of the easiest ways to look credible — and both Google Workspace and Microsoft 365 do it brilliantly. So how do you choose?
+
+Choose Google Workspace if your team values simplicity and real-time collaboration. Gmail, Docs, Sheets and Meet are fast, intuitive and built for working together in the browser, now with Gemini AI built in.
+
+Choose Microsoft 365 if your team relies on the desktop Office apps — Word, Excel, PowerPoint and Outlook — or needs deep integration with Teams and Windows. You also get 1TB of OneDrive storage per user.
+
+In practice, the right answer comes down to how your team already works. As a reseller of both, we're happy to give you honest advice, set everything up, and migrate your existing email with no downtime. Get in touch and we'll point you to the best fit.`,
+  },
+];
