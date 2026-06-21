@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import { Aurora, SectionHeading, ButtonLink } from "@/components/ui";
 import { getProducts } from "@/lib/content";
@@ -31,11 +32,9 @@ export default async function ProductsPage() {
 
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((p, i) => (
-            <Reveal key={p.title} delay={i * 70}>
-              <a
-                href={p.href}
-                target="_blank"
-                rel="noopener noreferrer"
+            <Reveal key={p.slug} delay={i * 70}>
+              <Link
+                href={`/products/${p.slug}`}
                 className={`group relative flex h-full flex-col overflow-hidden rounded-3xl p-7 transition-all duration-300 hover:-translate-y-1.5 ${
                   p.highlight
                     ? "border border-cyan-glow/40 bg-gradient-to-b from-cyan-glow/10 to-transparent"
@@ -68,10 +67,10 @@ export default async function ProductsPage() {
                     {p.price}
                   </span>
                   <span className="text-sm font-semibold text-foreground/80 transition-transform group-hover:translate-x-1">
-                    Order →
+                    View details →
                   </span>
                 </div>
-              </a>
+              </Link>
             </Reveal>
           ))}
         </div>

@@ -43,7 +43,7 @@ cp -r public        .next/standalone/public
 
 ```bash
 npm install -g pm2
-pm2 start ecosystem.config.js     # serves .next/standalone/server.js on :3000
+pm2 start ecosystem.config.cjs    # serves .next/standalone/server.js on :3000
 pm2 save
 pm2 startup                        # run the printed command so it survives reboot
 ```

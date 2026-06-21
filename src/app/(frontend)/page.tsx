@@ -1,17 +1,24 @@
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import { Aurora, Eyebrow, SectionHeading, ButtonLink } from "@/components/ui";
-import { stats, steps } from "@/lib/data";
-import { getServices, getProducts, getTestimonials } from "@/lib/content";
+import {
+  getServices,
+  getProducts,
+  getTestimonials,
+  getStats,
+  getSteps,
+} from "@/lib/content";
 import { site } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [services, products, testimonials] = await Promise.all([
+  const [services, products, testimonials, stats, steps] = await Promise.all([
     getServices(),
     getProducts(),
     getTestimonials(),
+    getStats(),
+    getSteps(),
   ]);
 
   return (
@@ -100,7 +107,7 @@ export default async function Home() {
             {services.map((s, i) => (
               <Reveal key={s.slug} delay={i * 70}>
                 <Link
-                  href={`/services#${s.slug}`}
+                  href={`/services/${s.slug}`}
                   className="group relative flex h-full flex-col overflow-hidden rounded-3xl glass p-7 transition-all duration-300 hover:-translate-y-1.5 hover:border-white/20"
                 >
                   <div
@@ -163,11 +170,9 @@ export default async function Home() {
 
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((p, i) => (
-              <Reveal key={p.title} delay={i * 70}>
-                <a
-                  href={p.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              <Reveal key={p.slug} delay={i * 70}>
+                <Link
+                  href={`/products/${p.slug}`}
                   className={`group relative flex h-full flex-col overflow-hidden rounded-3xl p-7 transition-all duration-300 hover:-translate-y-1.5 ${
                     p.highlight
                       ? "border border-cyan-glow/40 bg-gradient-to-b from-cyan-glow/10 to-transparent"
@@ -200,10 +205,10 @@ export default async function Home() {
                       {p.price}
                     </span>
                     <span className="text-sm font-semibold text-foreground/80 transition-transform group-hover:translate-x-1">
-                      Order →
+                      View details →
                     </span>
                   </div>
-                </a>
+                </Link>
               </Reveal>
             ))}
           </div>

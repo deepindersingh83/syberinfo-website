@@ -91,8 +91,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'site-content': SiteContent;
+  };
+  globalsSelect: {
+    'site-content': SiteContentSelect<false> | SiteContentSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -159,7 +163,14 @@ export interface Service {
    */
   slug: string;
   tagline?: string | null;
+  /**
+   * Short one-liner used on cards
+   */
   description: string;
+  /**
+   * Wide intro shown at the top of the service page
+   */
+  overview?: string | null;
   /**
    * Emoji or short glyph, e.g. </> or ✦
    */
@@ -179,6 +190,29 @@ export interface Service {
         id?: string | null;
       }[]
     | null;
+  benefits?:
+    | {
+        benefit: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Detailed content blocks on the service page
+   */
+  sections?:
+    | {
+        heading: string;
+        body: string;
+        id?: string | null;
+      }[]
+    | null;
+  faqs?:
+    | {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * Lower numbers show first
    */
@@ -193,10 +227,21 @@ export interface Service {
 export interface Product {
   id: number;
   title: string;
+  /**
+   * URL segment, e.g. web-hosting
+   */
+  slug: string;
+  /**
+   * Short one-liner used on cards
+   */
   description: string;
+  /**
+   * Wide intro on the product page
+   */
+  overview?: string | null;
   icon?: string | null;
   /**
-   * Link to the store / order page
+   * External order link (hosting portal)
    */
   href: string;
   price?: string | null;
@@ -207,6 +252,23 @@ export interface Product {
   bullets?:
     | {
         bullet: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Detailed content blocks on the product page
+   */
+  sections?:
+    | {
+        heading: string;
+        body: string;
+        id?: string | null;
+      }[]
+    | null;
+  faqs?:
+    | {
+        question: string;
+        answer: string;
         id?: string | null;
       }[]
     | null;
@@ -341,12 +403,33 @@ export interface ServicesSelect<T extends boolean = true> {
   slug?: T;
   tagline?: T;
   description?: T;
+  overview?: T;
   icon?: T;
   accent?: T;
   features?:
     | T
     | {
         feature?: T;
+        id?: T;
+      };
+  benefits?:
+    | T
+    | {
+        benefit?: T;
+        id?: T;
+      };
+  sections?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+        id?: T;
+      };
+  faqs?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
         id?: T;
       };
   order?: T;
@@ -359,7 +442,9 @@ export interface ServicesSelect<T extends boolean = true> {
  */
 export interface ProductsSelect<T extends boolean = true> {
   title?: T;
+  slug?: T;
   description?: T;
+  overview?: T;
   icon?: T;
   href?: T;
   price?: T;
@@ -368,6 +453,20 @@ export interface ProductsSelect<T extends boolean = true> {
     | T
     | {
         bullet?: T;
+        id?: T;
+      };
+  sections?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+        id?: T;
+      };
+  faqs?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
         id?: T;
       };
   order?: T;
@@ -425,6 +524,58 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-content".
+ */
+export interface SiteContent {
+  id: number;
+  /**
+   * Headline numbers shown on the homepage & about page
+   */
+  stats?:
+    | {
+        value: string;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The 'How we work' steps on the homepage
+   */
+  processSteps?:
+    | {
+        title: string;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-content_select".
+ */
+export interface SiteContentSelect<T extends boolean = true> {
+  stats?:
+    | T
+    | {
+        value?: T;
+        label?: T;
+        id?: T;
+      };
+  processSteps?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -2,7 +2,7 @@
  * PM2 process config for running the SyberInfo site on a CloudPanel VPS.
  *
  *   npm ci && npm run build
- *   pm2 start ecosystem.config.js
+ *   pm2 start ecosystem.config.cjs
  *   pm2 save && pm2 startup
  *
  * Uses the Next.js "standalone" output (see next.config.ts). nginx (CloudPanel)

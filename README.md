@@ -41,7 +41,12 @@ npm run lint     # eslint
 
 ## Content management (Payload CMS)
 
-Services, Products and Testimonials are managed in the built-in admin:
+Services, Products, Testimonials and the homepage **Stats** & **Process steps**
+(under *Homepage Content*) are managed in the built-in admin. Each Service and
+Product has its own detail page (`/services/[slug]`, `/products/[slug]`) with a
+wide description, sections and FAQs — all editable.
+
+To manage content:
 
 1. Run the app (`npm run dev`, or in production) and open **`/admin`**.
 2. On first run, create your admin user.

@@ -68,7 +68,17 @@ export default buildConfig({
           admin: { description: "URL anchor, e.g. web-development" },
         },
         { name: "tagline", type: "text" },
-        { name: "description", type: "textarea", required: true },
+        {
+          name: "description",
+          type: "textarea",
+          required: true,
+          admin: { description: "Short one-liner used on cards" },
+        },
+        {
+          name: "overview",
+          type: "textarea",
+          admin: { description: "Wide intro shown at the top of the service page" },
+        },
         {
           name: "icon",
           type: "text",
@@ -84,6 +94,28 @@ export default buildConfig({
           name: "features",
           type: "array",
           fields: [{ name: "feature", type: "text", required: true }],
+        },
+        {
+          name: "benefits",
+          type: "array",
+          fields: [{ name: "benefit", type: "text", required: true }],
+        },
+        {
+          name: "sections",
+          type: "array",
+          admin: { description: "Detailed content blocks on the service page" },
+          fields: [
+            { name: "heading", type: "text", required: true },
+            { name: "body", type: "textarea", required: true },
+          ],
+        },
+        {
+          name: "faqs",
+          type: "array",
+          fields: [
+            { name: "question", type: "text", required: true },
+            { name: "answer", type: "textarea", required: true },
+          ],
         },
         {
           name: "order",
@@ -104,13 +136,30 @@ export default buildConfig({
       defaultSort: "order",
       fields: [
         { name: "title", type: "text", required: true },
-        { name: "description", type: "textarea", required: true },
+        {
+          name: "slug",
+          type: "text",
+          required: true,
+          unique: true,
+          admin: { description: "URL segment, e.g. web-hosting" },
+        },
+        {
+          name: "description",
+          type: "textarea",
+          required: true,
+          admin: { description: "Short one-liner used on cards" },
+        },
+        {
+          name: "overview",
+          type: "textarea",
+          admin: { description: "Wide intro on the product page" },
+        },
         { name: "icon", type: "text" },
         {
           name: "href",
           type: "text",
           required: true,
-          admin: { description: "Link to the store / order page" },
+          admin: { description: "External order link (hosting portal)" },
         },
         { name: "price", type: "text" },
         {
@@ -123,6 +172,23 @@ export default buildConfig({
           name: "bullets",
           type: "array",
           fields: [{ name: "bullet", type: "text", required: true }],
+        },
+        {
+          name: "sections",
+          type: "array",
+          admin: { description: "Detailed content blocks on the product page" },
+          fields: [
+            { name: "heading", type: "text", required: true },
+            { name: "body", type: "textarea", required: true },
+          ],
+        },
+        {
+          name: "faqs",
+          type: "array",
+          fields: [
+            { name: "question", type: "text", required: true },
+            { name: "answer", type: "textarea", required: true },
+          ],
         },
         { name: "order", type: "number", defaultValue: 0 },
       ],
@@ -144,6 +210,36 @@ export default buildConfig({
       ],
     },
   ],
+  globals: [
+    {
+      slug: "site-content",
+      label: "Homepage Content",
+      admin: { group: "Content" },
+      access: { read: () => true },
+      fields: [
+        {
+          name: "stats",
+          type: "array",
+          label: "Stats",
+          admin: { description: "Headline numbers shown on the homepage & about page" },
+          fields: [
+            { name: "value", type: "text", required: true },
+            { name: "label", type: "text", required: true },
+          ],
+        },
+        {
+          name: "processSteps",
+          type: "array",
+          label: "Process steps",
+          admin: { description: "The 'How we work' steps on the homepage" },
+          fields: [
+            { name: "title", type: "text", required: true },
+            { name: "text", type: "textarea", required: true },
+          ],
+        },
+      ],
+    },
+  ],
   async onInit(payload) {
     // Seed content the first time the CMS runs so the site isn't empty.
     // Loaded dynamically so the Payload CLI (migrations/types) doesn't need to
@@ -152,6 +248,8 @@ export default buildConfig({
       services: seedServices,
       products: seedProducts,
       testimonials: seedTestimonials,
+      stats: seedStats,
+      steps: seedSteps,
     } = await import("@/lib/data");
 
     const { totalDocs: serviceCount } = await payload.count({
@@ -167,9 +265,16 @@ export default buildConfig({
             slug: s.slug,
             tagline: s.tagline,
             description: s.description,
+            overview: s.overview,
             icon: s.icon,
             accent: s.accent as (typeof ACCENTS)[number],
             features: s.features.map((feature) => ({ feature })),
+            benefits: s.benefits.map((benefit) => ({ benefit })),
+            sections: s.sections.map((sec) => ({
+              heading: sec.heading,
+              body: sec.body,
+            })),
+            faqs: s.faqs.map((f) => ({ question: f.question, answer: f.answer })),
             order: i,
           },
         });
@@ -187,12 +292,19 @@ export default buildConfig({
           collection: "products",
           data: {
             title: p.title,
+            slug: p.slug,
             description: p.description,
+            overview: p.overview,
             icon: p.icon,
             href: p.href,
             price: p.price,
             highlight: p.highlight ?? false,
             bullets: p.bullets.map((bullet) => ({ bullet })),
+            sections: p.sections.map((sec) => ({
+              heading: sec.heading,
+              body: sec.body,
+            })),
+            faqs: p.faqs.map((f) => ({ question: f.question, answer: f.answer })),
             order: i,
           },
         });
@@ -212,6 +324,19 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedTestimonials.length} testimonials`);
+    }
+
+    // Seed the homepage content global (stats + process steps) if empty.
+    const siteContent = await payload.findGlobal({ slug: "site-content" });
+    if (!siteContent?.stats?.length) {
+      await payload.updateGlobal({
+        slug: "site-content",
+        data: {
+          stats: seedStats.map((s) => ({ value: s.value, label: s.label })),
+          processSteps: seedSteps.map((s) => ({ title: s.title, text: s.text })),
+        },
+      });
+      payload.logger.info("Seeded homepage content (stats & process)");
     }
   },
 });

@@ -1,12 +1,19 @@
 import { store } from "./site";
 
+export type ServiceSection = { heading: string; body: string };
+export type ServiceFaq = { question: string; answer: string };
+
 export type Service = {
   slug: string;
   title: string;
   tagline: string;
-  description: string;
+  description: string; // short one-liner used on cards
+  overview: string; // wide intro shown at the top of the detail page
   icon: string; // emoji glyph kept lightweight (no icon lib dependency)
   features: string[];
+  benefits: string[];
+  sections: ServiceSection[];
+  faqs: ServiceFaq[];
   accent: string; // tailwind gradient stops
 };
 
@@ -17,12 +24,51 @@ export const services: Service[] = [
     tagline: "Fast, scalable, built to convert",
     description:
       "Custom websites and web apps engineered for speed, SEO and conversions — from marketing sites to full e-commerce and customer portals.",
+    overview:
+      "Your website is the hardest-working member of your team — it sells, supports and builds trust around the clock. At SyberInfo we design and engineer fast, secure, search-friendly websites and web applications that turn visitors into customers. Whether you need a sharp marketing site, a complete online store, a booking platform or a custom internal tool, we build it on modern, future-proof technology that scales with your business.",
     icon: "</>",
     features: [
       "Next.js / React & headless builds",
       "E-commerce & booking systems",
       "WordPress & custom CMS",
       "API & third-party integrations",
+    ],
+    benefits: [
+      "Lightning-fast load times and top Core Web Vitals",
+      "Mobile-first, accessible and SEO-ready from day one",
+      "Secure, maintainable code you actually own",
+      "Built to scale — add features without a rebuild",
+    ],
+    sections: [
+      {
+        heading: "Websites that work as hard as you do",
+        body: "We start with your goals, not a template. Every page is structured to guide visitors toward a clear action — an enquiry, a booking or a sale. Clean design, fast performance and thoughtful UX come standard, so your site looks the part and performs even better.",
+      },
+      {
+        heading: "E-commerce & web applications",
+        body: "Need to sell online or run your business through a custom portal? We build secure stores, membership areas, dashboards and booking systems with payment, inventory and CRM integrations — tailored to how your business actually operates.",
+      },
+      {
+        heading: "Modern, future-proof technology",
+        body: "We build with frameworks like Next.js and React, plus headless and traditional CMS options, so your site is fast today and easy to extend tomorrow. You're never locked in, and you always own your code and content.",
+      },
+    ],
+    faqs: [
+      {
+        question: "How long does a website take to build?",
+        answer:
+          "A typical marketing website takes 2–4 weeks; larger e-commerce or custom applications take longer. After our first call we'll give you a clear timeline and milestones.",
+      },
+      {
+        question: "Can you redesign or rebuild my existing site?",
+        answer:
+          "Absolutely. We can refresh your current site or rebuild it on a faster, more secure platform while preserving your SEO and content.",
+      },
+      {
+        question: "Will I be able to update the site myself?",
+        answer:
+          "Yes. We can set you up with an easy-to-use CMS and a short walkthrough so your team can edit content without touching code.",
+      },
     ],
     accent: "from-cyan-glow to-violet-glow",
   },
@@ -32,12 +78,51 @@ export const services: Service[] = [
     tagline: "Identities people remember",
     description:
       "UI/UX and brand identity that looks stunning and works flawlessly — wireframes to pixel-perfect, accessible interfaces.",
+    overview:
+      "Great design is more than good looks — it's how customers understand, trust and choose you. Our design team crafts memorable brand identities and intuitive digital experiences that make your business stand out and feel effortless to use. From your logo and colour palette to every screen and button, we create a cohesive look that builds credibility and drives action.",
     icon: "✦",
     features: [
       "Brand identity & logo design",
       "UI/UX & design systems",
       "Landing page design",
       "Print & social creatives",
+    ],
+    benefits: [
+      "A distinctive brand customers remember",
+      "Interfaces that are beautiful and easy to use",
+      "Consistent visuals across web, print and social",
+      "Reusable design systems that speed up future work",
+    ],
+    sections: [
+      {
+        heading: "Brand identity that sticks",
+        body: "We shape a visual identity that reflects who you are — logo, colours, typography and tone — and package it into clear brand guidelines so everything you produce looks consistent and professional.",
+      },
+      {
+        heading: "UI/UX that converts",
+        body: "We map user journeys, wireframe key flows and design pixel-perfect, accessible interfaces. The result is a site or app that feels intuitive, reduces friction and turns more visitors into customers.",
+      },
+      {
+        heading: "Creative for every channel",
+        body: "From landing pages and social media creatives to brochures and ad banners, we keep your brand sharp and recognisable everywhere your customers see you.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Do you design as well as build?",
+        answer:
+          "Yes — design and development sit under one roof, so your brand and website stay perfectly aligned and the handover is seamless.",
+      },
+      {
+        question: "Can you refresh our existing brand?",
+        answer:
+          "We can evolve your current identity or create a brand-new one, depending on your goals and budget.",
+      },
+      {
+        question: "Will I get editable source files?",
+        answer:
+          "You'll receive your logo and brand assets in all the formats you need, plus guidelines so your brand stays consistent.",
+      },
     ],
     accent: "from-violet-glow to-pink-glow",
   },
@@ -47,12 +132,51 @@ export const services: Service[] = [
     tagline: "Rank higher, earn more traffic",
     description:
       "Technical, on-page and content SEO that lifts your rankings and brings qualified organic traffic that actually converts.",
+    overview:
+      "Showing up on Google is one of the highest-value investments your business can make — and it compounds over time. Our SEO service combines technical fixes, on-page optimisation, content strategy and trusted link building to lift your rankings and bring in qualified visitors who are ready to buy. Everything is measured and reported, so you always see exactly what's working and what it's earning you.",
     icon: "↗",
     features: [
       "Technical SEO audits",
       "Keyword & content strategy",
       "Local SEO & Google Business",
       "Link building & reporting",
+    ],
+    benefits: [
+      "More qualified organic traffic that converts",
+      "Higher rankings for the terms that matter",
+      "Stronger local visibility on Google Maps",
+      "Transparent reporting tied to real results",
+    ],
+    sections: [
+      {
+        heading: "Technical foundations",
+        body: "We audit your site for the issues that hold rankings back — speed, crawlability, structured data, mobile usability and more — and fix them so search engines can find and reward your pages.",
+      },
+      {
+        heading: "Content & keywords that win",
+        body: "We research what your customers actually search for, then map and optimise content to match their intent at every stage — so you attract the right people, not just more clicks.",
+      },
+      {
+        heading: "Local SEO & authority",
+        body: "We optimise your Google Business Profile and local listings to win nearby customers, and build trusted links that grow your domain authority and long-term rankings.",
+      },
+    ],
+    faqs: [
+      {
+        question: "How long until I see SEO results?",
+        answer:
+          "SEO is a long-term investment. You'll often see early movement in 2–3 months, with momentum building from there. We report progress every month.",
+      },
+      {
+        question: "Do you guarantee #1 rankings?",
+        answer:
+          "No reputable agency can guarantee a specific position, but we focus on the strategies proven to move rankings and, more importantly, grow leads and sales.",
+      },
+      {
+        question: "Is SEO worth it for a small local business?",
+        answer:
+          "Definitely — local SEO is one of the most cost-effective ways to win nearby customers actively searching for what you offer.",
+      },
     ],
     accent: "from-pink-glow to-cyan-glow",
   },
@@ -62,12 +186,51 @@ export const services: Service[] = [
     tagline: "Build a brand people follow",
     description:
       "Social media optimisation and management that grows your audience and turns followers into customers.",
+    overview:
+      "Social media is where your audience discovers, follows and recommends brands they love. Our social media optimisation and management service helps you show up consistently with content that builds your audience, sparks engagement and drives real business — not just likes. From optimised profiles and content calendars to community management and paid campaigns, we make your brand impossible to scroll past.",
     icon: "◎",
     features: [
       "Profile & content optimisation",
       "Content calendars & creatives",
       "Community management",
       "Paid social campaigns",
+    ],
+    benefits: [
+      "A growing, engaged and loyal audience",
+      "Consistent, on-brand content without the workload",
+      "More traffic and leads from social channels",
+      "Paid campaigns that maximise every dollar",
+    ],
+    sections: [
+      {
+        heading: "Optimised, on-brand profiles",
+        body: "We fine-tune your profiles across the platforms that matter so they look professional, rank in social search and clearly tell visitors what you do and why to follow.",
+      },
+      {
+        heading: "Content people actually engage with",
+        body: "We plan and produce a steady stream of scroll-stopping posts, reels and graphics mapped to a content calendar — so you stay visible and consistent without the daily scramble.",
+      },
+      {
+        heading: "Community & paid growth",
+        body: "We manage comments and messages to build relationships, and run targeted paid campaigns to reach new, relevant audiences and turn engagement into measurable results.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Which platforms should my business be on?",
+        answer:
+          "It depends on where your customers spend time. We'll recommend the right mix — often Instagram, Facebook and LinkedIn — rather than spreading you too thin.",
+      },
+      {
+        question: "Do you create the content too?",
+        answer:
+          "Yes — we handle strategy, copy and creative, and can incorporate your photos, products and brand assets.",
+      },
+      {
+        question: "Can you run our ads as well?",
+        answer:
+          "We do. We plan, launch and optimise paid social campaigns and report on the leads and sales they generate.",
+      },
     ],
     accent: "from-cyan-glow to-pink-glow",
   },
@@ -77,6 +240,8 @@ export const services: Service[] = [
     tagline: "Full-funnel growth engine",
     description:
       "Data-driven campaigns across search, social and email that generate leads and measurable ROI for your business.",
+    overview:
+      "Digital marketing ties everything together into a single growth engine. We plan and run data-driven campaigns across search, social and email — capturing demand, nurturing leads and converting them into customers. Every campaign is built around clear goals and tracked end-to-end, so you know exactly what's driving results and where every dollar goes.",
     icon: "⚡",
     features: [
       "Google & Meta Ads (PPC)",
@@ -84,61 +249,230 @@ export const services: Service[] = [
       "Conversion rate optimisation",
       "Analytics & growth reporting",
     ],
+    benefits: [
+      "A predictable, measurable flow of leads",
+      "Lower cost per lead through constant optimisation",
+      "Campaigns aligned to real revenue goals",
+      "Clear reporting on what's working and why",
+    ],
+    sections: [
+      {
+        heading: "Paid advertising that pays back",
+        body: "We build and manage Google and Meta ad campaigns that put you in front of ready-to-buy customers, then optimise targeting, creative and bids to drive down your cost per lead.",
+      },
+      {
+        heading: "Email & automation",
+        body: "We set up email campaigns and automated journeys that nurture leads and bring customers back — turning one-time visitors into repeat business on autopilot.",
+      },
+      {
+        heading: "Optimisation & reporting",
+        body: "We continually test landing pages and funnels to lift conversion rates, and give you clear, jargon-free reporting that connects activity to leads, sales and ROI.",
+      },
+    ],
+    faqs: [
+      {
+        question: "How much should I budget for ads?",
+        answer:
+          "It varies by industry and goals. We'll recommend a starting budget designed to gather data quickly, then scale what works.",
+      },
+      {
+        question: "Can you work with my existing tools?",
+        answer:
+          "Yes — we integrate with most popular ad, email, CRM and analytics platforms, or recommend the best fit if you're starting fresh.",
+      },
+      {
+        question: "How do you measure success?",
+        answer:
+          "By the metrics that matter to you — leads, sales and return on ad spend — not vanity numbers. You'll get regular, transparent reports.",
+      },
+    ],
     accent: "from-violet-glow to-cyan-glow",
   },
 ];
 
+export type ProductSection = { heading: string; body: string };
+export type ProductFaq = { question: string; answer: string };
+
 export type Product = {
+  slug: string;
   title: string;
-  description: string;
+  description: string; // short one-liner used on cards
+  overview: string; // wide intro on the detail page
   icon: string;
-  href: string;
+  href: string; // external order link (hosting portal)
   price?: string;
   highlight?: boolean;
   bullets: string[];
+  sections: ProductSection[];
+  faqs: ProductFaq[];
 };
 
 export const products: Product[] = [
   {
+    slug: "domains",
     title: "Domain Names",
     description: "Register the perfect .com.au, .com or any domain in minutes.",
+    overview:
+      "Your domain is your identity online. Register the perfect .com.au, .com or any of hundreds of extensions in minutes, with free DNS management, easy transfers and optional privacy protection — all managed from one simple dashboard.",
     icon: "🌐",
     href: store.domains,
     price: "from $14.95/yr",
     bullets: ["Free DNS management", "Domain privacy", "Easy transfers"],
+    sections: [
+      {
+        heading: "Find your perfect name",
+        body: "Search and register across hundreds of extensions — .com.au, .com, .net, .io and more. Already have a domain elsewhere? Transfer it to us in a few clicks and keep everything in one place.",
+      },
+      {
+        heading: "Full control, included free",
+        body: "Every domain comes with an easy DNS manager, email and web forwarding, and optional WHOIS privacy to keep your personal details off public records — at no extra cost.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Can I transfer my existing domain to SyberInfo?",
+        answer:
+          "Yes — most domains can be transferred to us quickly, and we'll help you through every step so nothing breaks.",
+      },
+      {
+        question: "Do you offer .com.au domains?",
+        answer:
+          "Absolutely. We register Australian (.com.au, .net.au) domains as well as all major international extensions.",
+      },
+    ],
   },
   {
+    slug: "web-hosting",
     title: "Web Hosting",
     description: "Blazing-fast, secure hosting with 99.9% uptime and free SSL.",
+    overview:
+      "Fast, secure and reliable web hosting built for performance. Every plan includes a free SSL certificate, daily backups and an easy cPanel control panel, backed by 99.9% uptime and local support — so your website is always online and protected.",
     icon: "⚡",
     href: store.hosting,
     price: "from $4.95/mo",
     highlight: true,
     bullets: ["Free SSL certificate", "Daily backups", "cPanel control panel"],
+    sections: [
+      {
+        heading: "Speed and uptime you can count on",
+        body: "Our hosting runs on high-performance servers with SSD storage and caching for fast load times, backed by a 99.9% uptime guarantee so your visitors never hit a closed door.",
+      },
+      {
+        heading: "Secure and effortless to manage",
+        body: "Free SSL keeps your site secure and trusted, automatic daily backups protect your data, and the familiar cPanel interface makes managing email, files and databases simple.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Can you migrate my existing website?",
+        answer:
+          "Yes — we can move your existing site and email to our hosting, usually with no downtime.",
+      },
+      {
+        question: "Is SSL really free?",
+        answer:
+          "It is. Every hosting plan includes a free SSL certificate so your site loads securely over HTTPS.",
+      },
+    ],
   },
   {
+    slug: "linux-hosting",
     title: "Linux Hosting",
     description: "High-performance Linux servers tuned for speed and stability.",
+    overview:
+      "Rock-solid Linux hosting tuned for speed and stability. With SSD storage, LiteSpeed/Apache and SSH access, it's the ideal home for WordPress, PHP applications and developer projects that need power and flexibility.",
     icon: "🐧",
     href: store.linux,
     price: "from $6.95/mo",
     bullets: ["SSD storage", "LiteSpeed / Apache", "SSH access"],
+    sections: [
+      {
+        heading: "Built for performance",
+        body: "Fast SSD storage and an optimised LiteSpeed/Apache stack deliver excellent performance for WordPress and PHP apps, with the stability Linux is famous for.",
+      },
+      {
+        heading: "Developer-friendly",
+        body: "Get SSH access, Git, cron jobs and full control over your environment — everything you need to deploy and run modern web applications.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Is Linux hosting good for WordPress?",
+        answer:
+          "Yes — Linux hosting is the recommended, best-performing environment for WordPress and most PHP-based websites.",
+      },
+      {
+        question: "Do I get SSH access?",
+        answer:
+          "Yes, SSH access is included so developers can manage their applications directly.",
+      },
+    ],
   },
   {
+    slug: "google-workspace",
     title: "Google Workspace",
     description: "Professional email, Docs, Drive & Meet on your own domain.",
+    overview:
+      "Run your business on professional email and Google's productivity suite. Google Workspace gives your team custom @yourdomain email, plus Docs, Sheets, Drive, Meet and Gemini AI — all collaborative, secure and accessible anywhere.",
     icon: "✉️",
     href: store.google,
     price: "from $8.40/user/mo",
     bullets: ["Business email", "30GB+ storage", "Gemini & Meet"],
+    sections: [
+      {
+        heading: "Professional email on your domain",
+        body: "Give every team member a polished name@yourdomain.com.au address with the reliability and spam protection of Gmail behind it.",
+      },
+      {
+        heading: "Collaborate from anywhere",
+        body: "Docs, Sheets, Slides, Drive storage and Meet video calls keep your team working together in real time, on any device — now supercharged with Gemini AI.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Can you set it up and migrate our email?",
+        answer:
+          "Yes — we handle setup and migrate your existing email, contacts and calendars so the switch is smooth.",
+      },
+      {
+        question: "Can I add or remove users later?",
+        answer:
+          "Of course. You can scale licences up or down at any time as your team changes.",
+      },
+    ],
   },
   {
+    slug: "microsoft-365",
     title: "Microsoft 365",
     description: "Outlook, Teams, Office apps and OneDrive for your team.",
+    overview:
+      "Everything your team needs to work and collaborate, from Microsoft. Microsoft 365 includes Outlook email on your domain, Teams, the full Office apps and 1TB of OneDrive storage per user — secure, familiar and always up to date.",
     icon: "🪟",
     href: store.microsoft,
     price: "from $9.50/user/mo",
     bullets: ["Outlook email", "Teams & Office", "1TB OneDrive"],
+    sections: [
+      {
+        heading: "Business email with Outlook",
+        body: "Professional email on your own domain with the power of Exchange — shared calendars, large mailboxes and enterprise-grade security.",
+      },
+      {
+        heading: "The Office apps your team knows",
+        body: "Word, Excel, PowerPoint and Teams, plus 1TB of OneDrive storage per user, so everyone can create, store and collaborate with tools they already understand.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Which is better — Google Workspace or Microsoft 365?",
+        answer:
+          "It depends on how your team works. We're happy to advise and can set you up with whichever suits you best.",
+      },
+      {
+        question: "Do you provide setup and support?",
+        answer:
+          "Yes — we handle provisioning, migration and ongoing support so you're never on your own.",
+      },
+    ],
   },
 ];
 

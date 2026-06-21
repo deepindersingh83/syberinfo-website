@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Reveal from "@/components/Reveal";
 import { Aurora, SectionHeading, ButtonLink } from "@/components/ui";
-import { stats } from "@/lib/data";
+import { getStats } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "About",
   description:
     "SyberInfo is an Australian digital agency helping businesses launch, grow and scale online with web, design, marketing and cloud services.",
 };
+
+export const dynamic = "force-dynamic";
 
 const values = [
   {
@@ -32,7 +34,8 @@ const values = [
   },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const stats = await getStats();
   return (
     <div className="relative pt-36 pb-12">
       <Aurora />

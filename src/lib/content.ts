@@ -4,11 +4,15 @@ import {
   services as fallbackServices,
   products as fallbackProducts,
   testimonials as fallbackTestimonials,
+  stats as fallbackStats,
+  steps as fallbackSteps,
   type Service,
   type Product,
 } from "./data";
 
 type Testimonial = { quote: string; name: string; role: string };
+type Stat = { value: string; label: string };
+type Step = { n: string; title: string; text: string };
 
 /**
  * Content accessors. Each reads from the Payload CMS and transparently falls
@@ -25,6 +29,37 @@ async function tryPayload<T>(fn: (payload: Awaited<ReturnType<typeof getPayload>
   }
 }
 
+function mapService(d: unknown): Service {
+  const doc = d as Record<string, unknown>;
+  return {
+    slug: String(doc.slug ?? ""),
+    title: String(doc.title ?? ""),
+    tagline: String(doc.tagline ?? ""),
+    description: String(doc.description ?? ""),
+    overview: String(doc.overview ?? ""),
+    icon: String(doc.icon ?? ""),
+    accent: String(doc.accent ?? "from-cyan-glow to-violet-glow"),
+    features: Array.isArray(doc.features)
+      ? (doc.features as { feature: string }[]).map((f) => f.feature)
+      : [],
+    benefits: Array.isArray(doc.benefits)
+      ? (doc.benefits as { benefit: string }[]).map((b) => b.benefit)
+      : [],
+    sections: Array.isArray(doc.sections)
+      ? (doc.sections as { heading: string; body: string }[]).map((s) => ({
+          heading: s.heading,
+          body: s.body,
+        }))
+      : [],
+    faqs: Array.isArray(doc.faqs)
+      ? (doc.faqs as { question: string; answer: string }[]).map((f) => ({
+          question: f.question,
+          answer: f.answer,
+        }))
+      : [],
+  } satisfies Service;
+}
+
 export async function getServices(): Promise<Service[]> {
   return tryPayload(async (payload) => {
     const { docs } = await payload.find({
@@ -33,21 +68,20 @@ export async function getServices(): Promise<Service[]> {
       limit: 100,
     });
     if (!docs.length) return fallbackServices;
-    return docs.map((d) => {
-      const doc = d as unknown as Record<string, unknown>;
-      return {
-        slug: String(doc.slug ?? ""),
-        title: String(doc.title ?? ""),
-        tagline: String(doc.tagline ?? ""),
-        description: String(doc.description ?? ""),
-        icon: String(doc.icon ?? ""),
-        accent: String(doc.accent ?? "from-cyan-glow to-violet-glow"),
-        features: Array.isArray(doc.features)
-          ? (doc.features as { feature: string }[]).map((f) => f.feature)
-          : [],
-      } satisfies Service;
-    });
+    return docs.map(mapService);
   }, fallbackServices);
+}
+
+export async function getService(slug: string): Promise<Service | null> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "services",
+      where: { slug: { equals: slug } },
+      limit: 1,
+    });
+    if (docs.length) return mapService(docs[0]);
+    return fallbackServices.find((s) => s.slug === slug) ?? null;
+  }, fallbackServices.find((s) => s.slug === slug) ?? null);
 }
 
 export async function getProducts(): Promise<Product[]> {
@@ -58,21 +92,75 @@ export async function getProducts(): Promise<Product[]> {
       limit: 100,
     });
     if (!docs.length) return fallbackProducts;
-    return docs.map((d) => {
-      const doc = d as unknown as Record<string, unknown>;
-      return {
-        title: String(doc.title ?? ""),
-        description: String(doc.description ?? ""),
-        icon: String(doc.icon ?? ""),
-        href: String(doc.href ?? "#"),
-        price: doc.price ? String(doc.price) : undefined,
-        highlight: Boolean(doc.highlight),
-        bullets: Array.isArray(doc.bullets)
-          ? (doc.bullets as { bullet: string }[]).map((b) => b.bullet)
-          : [],
-      } satisfies Product;
-    });
+    return docs.map(mapProduct);
   }, fallbackProducts);
+}
+
+function mapProduct(d: unknown): Product {
+  const doc = d as Record<string, unknown>;
+  return {
+    slug: String(doc.slug ?? ""),
+    title: String(doc.title ?? ""),
+    description: String(doc.description ?? ""),
+    overview: String(doc.overview ?? ""),
+    icon: String(doc.icon ?? ""),
+    href: String(doc.href ?? "#"),
+    price: doc.price ? String(doc.price) : undefined,
+    highlight: Boolean(doc.highlight),
+    bullets: Array.isArray(doc.bullets)
+      ? (doc.bullets as { bullet: string }[]).map((b) => b.bullet)
+      : [],
+    sections: Array.isArray(doc.sections)
+      ? (doc.sections as { heading: string; body: string }[]).map((s) => ({
+          heading: s.heading,
+          body: s.body,
+        }))
+      : [],
+    faqs: Array.isArray(doc.faqs)
+      ? (doc.faqs as { question: string; answer: string }[]).map((f) => ({
+          question: f.question,
+          answer: f.answer,
+        }))
+      : [],
+  } satisfies Product;
+}
+
+export async function getProduct(slug: string): Promise<Product | null> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "products",
+      where: { slug: { equals: slug } },
+      limit: 1,
+    });
+    if (docs.length) return mapProduct(docs[0]);
+    return fallbackProducts.find((p) => p.slug === slug) ?? null;
+  }, fallbackProducts.find((p) => p.slug === slug) ?? null);
+}
+
+export async function getStats(): Promise<Stat[]> {
+  return tryPayload(async (payload) => {
+    const g = (await payload.findGlobal({
+      slug: "site-content",
+    })) as unknown as Record<string, unknown>;
+    const stats = g.stats as { value: string; label: string }[] | undefined;
+    if (!stats?.length) return fallbackStats;
+    return stats.map((s) => ({ value: s.value, label: s.label }));
+  }, fallbackStats);
+}
+
+export async function getSteps(): Promise<Step[]> {
+  return tryPayload(async (payload) => {
+    const g = (await payload.findGlobal({
+      slug: "site-content",
+    })) as unknown as Record<string, unknown>;
+    const steps = g.processSteps as { title: string; text: string }[] | undefined;
+    if (!steps?.length) return fallbackSteps;
+    return steps.map((s, i) => ({
+      n: String(i + 1).padStart(2, "0"),
+      title: s.title,
+      text: s.text,
+    }));
+  }, fallbackSteps);
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
