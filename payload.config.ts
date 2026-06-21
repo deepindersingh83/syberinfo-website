@@ -16,6 +16,15 @@ const ACCENTS = [
   "from-violet-glow to-cyan-glow",
 ] as const;
 
+// Kept in sync with PLAN_CATEGORIES in src/lib/data.ts (defined locally so the
+// Payload CLI doesn't need to resolve app source when loading this config).
+const PLAN_CATEGORIES = [
+  "Google Workspace",
+  "Microsoft 365",
+  "Website Packages",
+  "Marketing & SEO",
+] as const;
+
 export default buildConfig({
   admin: {
     user: "users",
@@ -280,6 +289,64 @@ export default buildConfig({
         },
       ],
     },
+    {
+      slug: "plans",
+      labels: { singular: "Plan", plural: "Pricing Plans" },
+      admin: {
+        useAsTitle: "name",
+        defaultColumns: ["name", "category", "priceAnnual", "order"],
+        group: "Content",
+      },
+      access: { read: () => true },
+      defaultSort: "order",
+      fields: [
+        {
+          name: "category",
+          type: "select",
+          required: true,
+          options: PLAN_CATEGORIES.map((c) => ({ label: c, value: c })),
+        },
+        { name: "name", type: "text", required: true },
+        { name: "blurb", type: "textarea" },
+        {
+          name: "priceAnnual",
+          type: "text",
+          admin: {
+            description:
+              "AUD ex-GST, billed yearly (e.g. 8.40). Leave blank for 'Get a quote'.",
+          },
+        },
+        {
+          name: "priceMonthly",
+          type: "text",
+          admin: { description: "AUD ex-GST, flexible/monthly (e.g. 10.10)." },
+        },
+        {
+          name: "unit",
+          type: "text",
+          admin: { description: "e.g. per user / month" },
+        },
+        {
+          name: "features",
+          type: "array",
+          fields: [{ name: "feature", type: "text", required: true }],
+        },
+        {
+          name: "highlight",
+          type: "checkbox",
+          defaultValue: false,
+          admin: { description: "Show as the featured plan" },
+        },
+        { name: "ctaLabel", type: "text", defaultValue: "Get a quote" },
+        {
+          name: "ctaHref",
+          type: "text",
+          defaultValue: "/contact",
+          admin: { description: "Order link or /contact" },
+        },
+        { name: "order", type: "number", defaultValue: 0 },
+      ],
+    },
   ],
   globals: [
     {
@@ -320,6 +387,7 @@ export default buildConfig({
       products: seedProducts,
       testimonials: seedTestimonials,
       posts: seedPosts,
+      plans: seedPlans,
       stats: seedStats,
       steps: seedSteps,
     } = await import("@/lib/data");
@@ -416,6 +484,29 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedPosts.length} posts`);
+    }
+
+    const { totalDocs: planCount } = await payload.count({ collection: "plans" });
+    if (planCount === 0) {
+      for (const p of seedPlans) {
+        await payload.create({
+          collection: "plans",
+          data: {
+            category: p.category as (typeof PLAN_CATEGORIES)[number],
+            name: p.name,
+            blurb: p.blurb,
+            priceAnnual: p.priceAnnual,
+            priceMonthly: p.priceMonthly,
+            unit: p.unit,
+            features: p.features.map((feature) => ({ feature })),
+            highlight: p.highlight ?? false,
+            ctaLabel: p.ctaLabel,
+            ctaHref: p.ctaHref,
+            order: p.order,
+          },
+        });
+      }
+      payload.logger.info(`Seeded ${seedPlans.length} pricing plans`);
     }
 
     // Seed the homepage content global (stats + process steps) if empty.

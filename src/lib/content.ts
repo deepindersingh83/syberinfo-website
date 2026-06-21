@@ -5,11 +5,13 @@ import {
   products as fallbackProducts,
   testimonials as fallbackTestimonials,
   posts as fallbackPosts,
+  plans as fallbackPlans,
   stats as fallbackStats,
   steps as fallbackSteps,
   type Service,
   type Product,
   type Post,
+  type Plan,
 } from "./data";
 
 type Testimonial = { quote: string; name: string; role: string };
@@ -220,6 +222,35 @@ export async function getPost(slug: string): Promise<Post | null> {
     if (docs.length) return mapPost(docs[0]);
     return fallbackPosts.find((p) => p.slug === slug) ?? null;
   }, fallbackPosts.find((p) => p.slug === slug) ?? null);
+}
+
+export async function getPlans(): Promise<Plan[]> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "plans",
+      sort: "order",
+      limit: 200,
+    });
+    if (!docs.length) return fallbackPlans;
+    return docs.map((d) => {
+      const doc = d as unknown as Record<string, unknown>;
+      return {
+        category: String(doc.category ?? "") as Plan["category"],
+        name: String(doc.name ?? ""),
+        blurb: String(doc.blurb ?? ""),
+        priceAnnual: doc.priceAnnual ? String(doc.priceAnnual) : undefined,
+        priceMonthly: doc.priceMonthly ? String(doc.priceMonthly) : undefined,
+        unit: doc.unit ? String(doc.unit) : undefined,
+        features: Array.isArray(doc.features)
+          ? (doc.features as { feature: string }[]).map((f) => f.feature)
+          : [],
+        highlight: Boolean(doc.highlight),
+        ctaLabel: String(doc.ctaLabel ?? "Get a quote"),
+        ctaHref: String(doc.ctaHref ?? "/contact"),
+        order: Number(doc.order ?? 0),
+      } satisfies Plan;
+    });
+  }, fallbackPlans);
 }
 
 export type LeadInput = {

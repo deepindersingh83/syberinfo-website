@@ -593,3 +593,229 @@ Choose Microsoft 365 if your team relies on the desktop Office apps — Word, Ex
 In practice, the right answer comes down to how your team already works. As a reseller of both, we're happy to give you honest advice, set everything up, and migrate your existing email with no downtime. Get in touch and we'll point you to the best fit.`,
   },
 ];
+
+export const PLAN_CATEGORIES = [
+  "Google Workspace",
+  "Microsoft 365",
+  "Website Packages",
+  "Marketing & SEO",
+] as const;
+
+export type PlanCategory = (typeof PLAN_CATEGORIES)[number];
+
+export type Plan = {
+  category: PlanCategory;
+  name: string;
+  blurb: string;
+  priceAnnual?: string; // ex-GST, AUD, billed yearly (e.g. "8.40"). Empty = "Get a quote"
+  priceMonthly?: string; // ex-GST, AUD, flexible/no lock-in (indicative)
+  unit?: string; // e.g. "per user / month"
+  features: string[];
+  highlight?: boolean;
+  ctaLabel: string;
+  ctaHref: string;
+  order: number;
+};
+
+// Prices in AUD, ex-GST (June 2026). Annual = annual-commit; monthly = flexible
+// (indicative ≈ annual ÷ 0.83). All editable in the CMS — update when Microsoft's
+// 1 July 2026 AU pricing is published.
+export const plans: Plan[] = [
+  // ── Google Workspace ──
+  {
+    category: "Google Workspace",
+    name: "Business Starter",
+    blurb: "Professional email and the essentials for small teams.",
+    priceAnnual: "8.40",
+    priceMonthly: "10.10",
+    unit: "per user / month",
+    features: [
+      "Custom business email",
+      "30 GB storage per user",
+      "Gmail, Docs, Sheets, Slides",
+      "Meet video calls (100 participants)",
+    ],
+    ctaLabel: "Order now",
+    ctaHref: store.google,
+    order: 1,
+  },
+  {
+    category: "Google Workspace",
+    name: "Business Standard",
+    blurb: "More storage and bigger meetings for growing teams.",
+    priceAnnual: "16.80",
+    priceMonthly: "20.20",
+    unit: "per user / month",
+    features: [
+      "Everything in Starter",
+      "2 TB storage per user",
+      "Meet (150 participants + recording)",
+      "Gemini AI assistance",
+    ],
+    highlight: true,
+    ctaLabel: "Order now",
+    ctaHref: store.google,
+    order: 2,
+  },
+  {
+    category: "Google Workspace",
+    name: "Business Plus",
+    blurb: "Advanced security and controls for larger teams.",
+    priceAnnual: "22.80",
+    priceMonthly: "27.40",
+    unit: "per user / month",
+    features: [
+      "Everything in Standard",
+      "5 TB storage per user",
+      "Meet (500 participants)",
+      "Advanced security & eDiscovery (Vault)",
+    ],
+    ctaLabel: "Order now",
+    ctaHref: store.google,
+    order: 3,
+  },
+  // ── Microsoft 365 ──
+  {
+    category: "Microsoft 365",
+    name: "Business Basic",
+    blurb: "Web & mobile apps plus business email.",
+    priceAnnual: "9.00",
+    priceMonthly: "10.80",
+    unit: "per user / month",
+    features: [
+      "Outlook business email",
+      "Teams, web & mobile Office apps",
+      "1 TB OneDrive storage",
+      "SharePoint & Exchange",
+    ],
+    ctaLabel: "Order now",
+    ctaHref: store.microsoft,
+    order: 1,
+  },
+  {
+    category: "Microsoft 365",
+    name: "Business Standard",
+    blurb: "The full desktop Office apps for everyday business.",
+    priceAnnual: "18.70",
+    priceMonthly: "22.40",
+    unit: "per user / month",
+    features: [
+      "Everything in Basic",
+      "Desktop Word, Excel, PowerPoint, Outlook",
+      "Teams webinars",
+      "1 TB OneDrive storage",
+    ],
+    highlight: true,
+    ctaLabel: "Order now",
+    ctaHref: store.microsoft,
+    order: 2,
+  },
+  {
+    category: "Microsoft 365",
+    name: "Business Premium",
+    blurb: "Advanced security and device management.",
+    priceAnnual: "32.90",
+    priceMonthly: "39.50",
+    unit: "per user / month",
+    features: [
+      "Everything in Standard",
+      "Advanced threat protection",
+      "Device management (Intune)",
+      "Identity & access management",
+    ],
+    ctaLabel: "Order now",
+    ctaHref: store.microsoft,
+    order: 3,
+  },
+  // ── Website Packages (quote-based) ──
+  {
+    category: "Website Packages",
+    name: "Launch",
+    blurb: "A polished, fast website to get your business online.",
+    features: [
+      "Up to 5 pages",
+      "Mobile-responsive design",
+      "On-page SEO basics",
+      "Contact form & Google Maps",
+      "SSL & launch support",
+    ],
+    ctaLabel: "Get a quote",
+    ctaHref: "/contact",
+    order: 1,
+  },
+  {
+    category: "Website Packages",
+    name: "Business",
+    blurb: "A bigger site with a CMS so you can edit it yourself.",
+    features: [
+      "Up to 12 pages",
+      "Easy-to-edit CMS",
+      "Blog & content setup",
+      "Advanced on-page SEO",
+      "Analytics & speed optimisation",
+    ],
+    highlight: true,
+    ctaLabel: "Get a quote",
+    ctaHref: "/contact",
+    order: 2,
+  },
+  {
+    category: "Website Packages",
+    name: "E-commerce / Custom",
+    blurb: "Online stores and custom web applications.",
+    features: [
+      "Online store or custom build",
+      "Payment & inventory setup",
+      "Third-party integrations",
+      "Custom features & dashboards",
+      "Priority support",
+    ],
+    ctaLabel: "Get a quote",
+    ctaHref: "/contact",
+    order: 3,
+  },
+  // ── Marketing & SEO (quote-based) ──
+  {
+    category: "Marketing & SEO",
+    name: "SEO",
+    blurb: "Climb the rankings and win qualified organic traffic.",
+    features: [
+      "Technical & on-page SEO",
+      "Keyword & content strategy",
+      "Local SEO & Google Business",
+      "Monthly reporting",
+    ],
+    ctaLabel: "Get a quote",
+    ctaHref: "/contact",
+    order: 1,
+  },
+  {
+    category: "Marketing & SEO",
+    name: "Social Media",
+    blurb: "Grow an engaged audience that turns into customers.",
+    features: [
+      "Profile optimisation",
+      "Content calendar & creatives",
+      "Community management",
+      "Paid social campaigns",
+    ],
+    highlight: true,
+    ctaLabel: "Get a quote",
+    ctaHref: "/contact",
+    order: 2,
+  },
+  {
+    category: "Marketing & SEO",
+    name: "Full-funnel Growth",
+    blurb: "End-to-end digital marketing built around ROI.",
+    features: [
+      "Google & Meta Ads (PPC)",
+      "Email & automation",
+      "Conversion rate optimisation",
+      "Analytics & growth reporting",
+    ],
+    ctaLabel: "Get a quote",
+    ctaHref: "/contact",
+    order: 3,
+  },
+];

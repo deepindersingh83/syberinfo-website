@@ -73,6 +73,7 @@ export interface Config {
     testimonials: Testimonial;
     posts: Post;
     leads: Lead;
+    plans: Plan;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,6 +87,7 @@ export interface Config {
     testimonials: TestimonialsSelect<false> | TestimonialsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     leads: LeadsSelect<false> | LeadsSelect<true>;
+    plans: PlansSelect<false> | PlansSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -339,6 +341,46 @@ export interface Lead {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plans".
+ */
+export interface Plan {
+  id: number;
+  category: 'Google Workspace' | 'Microsoft 365' | 'Website Packages' | 'Marketing & SEO';
+  name: string;
+  blurb?: string | null;
+  /**
+   * AUD ex-GST, billed yearly (e.g. 8.40). Leave blank for 'Get a quote'.
+   */
+  priceAnnual?: string | null;
+  /**
+   * AUD ex-GST, flexible/monthly (e.g. 10.10).
+   */
+  priceMonthly?: string | null;
+  /**
+   * e.g. per user / month
+   */
+  unit?: string | null;
+  features?:
+    | {
+        feature: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Show as the featured plan
+   */
+  highlight?: boolean | null;
+  ctaLabel?: string | null;
+  /**
+   * Order link or /contact
+   */
+  ctaHref?: string | null;
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -384,6 +426,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'leads';
         value: number | Lead;
+      } | null)
+    | ({
+        relationTo: 'plans';
+        value: number | Plan;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -568,6 +614,30 @@ export interface LeadsSelect<T extends boolean = true> {
   service?: T;
   message?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plans_select".
+ */
+export interface PlansSelect<T extends boolean = true> {
+  category?: T;
+  name?: T;
+  blurb?: T;
+  priceAnnual?: T;
+  priceMonthly?: T;
+  unit?: T;
+  features?:
+    | T
+    | {
+        feature?: T;
+        id?: T;
+      };
+  highlight?: T;
+  ctaLabel?: T;
+  ctaHref?: T;
+  order?: T;
   updatedAt?: T;
   createdAt?: T;
 }
