@@ -5,8 +5,8 @@
 export const site = {
   name: "SyberInfo",
   legalName: "SyberInfo",
-  domain: "syberinfo.com.au",
-  url: "https://syberinfo.com.au",
+  domain: "syberinfo.com",
+  url: "https://syberinfo.com",
   tagline: "Web. Design. Growth.",
   description:
     "SyberInfo builds high-performing websites and digital marketing that grow Australian businesses — web development, design, SEO, SMO, plus domains, hosting and Google & Microsoft Workspace as a trusted reseller.",

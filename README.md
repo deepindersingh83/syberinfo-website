@@ -96,5 +96,5 @@ src/
 - When you need a database (e.g. quotes, blog), use **MySQL/MariaDB** via
   CloudPanel with Prisma (`provider = "mysql"`).
 - Add real testimonials, case studies and an OpenGraph image.
-- Deploy as a CloudPanel **Node.js site**, point `syberinfo.com.au` at it and
+- Deploy as a CloudPanel **Node.js site**, point `syberinfo.com` at it and
   enable analytics.

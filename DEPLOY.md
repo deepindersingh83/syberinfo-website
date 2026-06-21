@@ -8,7 +8,7 @@
 ## 1. Create the site
 
 In CloudPanel: **Sites → Add Site → Create a Node.js Site**
-- Domain: `syberinfo.com.au` (or a subdomain)
+- Domain: `syberinfo.com` (or a subdomain)
 - Node.js version: **22**
 - App Port: **3000**
 
@@ -77,7 +77,7 @@ The site includes a self-hosted **Payload CMS** (SQLite) for managing content.
 - **Schema & seed are automatic.** On first production start, the bundled
   migrations create the tables and the initial Services / Products /
   Testimonials are seeded from code. No manual migrate step on deploy.
-- **Create your admin account:** visit `https://syberinfo.com.au/admin` and
+- **Create your admin account:** visit `https://syberinfo.com/admin` and
   Payload will prompt you to create the first user.
 - **Edit content:** Services, Products and Testimonials are editable under the
   *Content* group. Changes appear on the site immediately (pages are dynamic).

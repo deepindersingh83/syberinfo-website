@@ -64,7 +64,7 @@ primitives so ~90% of the backend is the framework's job.
   host for Phases 1–4.
 - Media: served from the app/disk now; can move to S3-compatible storage later
   via Payload's cloud-storage plugin if volume grows.
-- Stripe needs a public **webhook URL** (`https://syberinfo.com.au/api/...`) —
+- Stripe needs a public **webhook URL** (`https://syberinfo.com/api/...`) —
   already covered by your domain + SSL.
 
 ## What I need from you to start Phase 1
