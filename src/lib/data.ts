@@ -819,3 +819,75 @@ export const plans: Plan[] = [
     order: 3,
   },
 ];
+
+export type Partner = { name: string; order: number };
+
+// Technology & platform partners shown in the homepage carousel. Editable in
+// the CMS (add a logo image later if desired).
+export const partners: Partner[] = [
+  { name: "Google Workspace", order: 1 },
+  { name: "Microsoft 365", order: 2 },
+  { name: "cPanel", order: 3 },
+  { name: "LiteSpeed", order: 4 },
+  { name: "Cloudflare", order: 5 },
+  { name: "Let's Encrypt", order: 6 },
+  { name: "WordPress", order: 7 },
+  { name: "Stripe", order: 8 },
+  { name: "Next.js", order: 9 },
+  { name: "Vercel", order: 10 },
+];
+
+export type Faq = { question: string; answer: string; category: string; order: number };
+
+// General FAQs shown on the /faq page (and surfaced as FAQ schema for SEO).
+export const generalFaqs: Faq[] = [
+  {
+    category: "General",
+    question: "What does SyberInfo do?",
+    answer:
+      "We're an Australian digital agency offering web development, design, SEO, social media and digital marketing — plus domains, hosting and Google & Microsoft Workspace as a reseller. Everything your business needs to launch and grow online, under one roof.",
+    order: 1,
+  },
+  {
+    category: "General",
+    question: "Where are you based and who do you work with?",
+    answer:
+      "We're based in Australia and work with businesses of all sizes across the country, from sole traders and startups to established companies.",
+    order: 2,
+  },
+  {
+    category: "Websites",
+    question: "How much does a website cost?",
+    answer:
+      "It depends on the size and features. Our Launch package suits simple sites, while Business and E-commerce builds include a CMS, blog and custom features. Tell us your goals and we'll send a clear, fixed quote.",
+    order: 3,
+  },
+  {
+    category: "Websites",
+    question: "Can I update the website myself?",
+    answer:
+      "Yes. We can build your site on an easy-to-use CMS and give you a short walkthrough so your team can edit content without touching code.",
+    order: 4,
+  },
+  {
+    category: "Hosting & Email",
+    question: "Can you migrate my existing website and email?",
+    answer:
+      "Absolutely. We handle migrations of websites, email and domains — usually with no downtime — and manage the whole process for you.",
+    order: 5,
+  },
+  {
+    category: "Hosting & Email",
+    question: "Should I choose Google Workspace or Microsoft 365?",
+    answer:
+      "Both are excellent. Google Workspace shines for simple, real-time collaboration; Microsoft 365 suits teams that rely on desktop Office apps and Teams. As a reseller of both, we'll recommend the right fit and set it up for you.",
+    order: 6,
+  },
+  {
+    category: "Working with us",
+    question: "How do we get started?",
+    answer:
+      "Get in touch via our contact form or email. We'll have a quick chat about your goals, then send a tailored proposal and quote — usually within one business day.",
+    order: 7,
+  },
+];

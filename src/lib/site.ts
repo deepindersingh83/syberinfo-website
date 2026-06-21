@@ -12,6 +12,11 @@ export const site = {
     "SyberInfo builds high-performing websites and digital marketing that grow Australian businesses — web development, design, SEO, SMO, plus domains, hosting and Google & Microsoft Workspace as a trusted reseller.",
   email: "admin@syberinfo.com.au",
   phone: "+61 0000 000 000",
+  // WhatsApp number in international format, digits only (no + or spaces).
+  // Leave empty to hide the floating WhatsApp button. e.g. "61400000000"
+  whatsapp: "",
+  // Public status/uptime page (e.g. UptimeRobot/BetterStack). Shown in footer.
+  statusUrl: "https://status.syberinfo.com",
   location: "Australia",
   // Existing billing / client portal (WHMCS-style) lives on this subdomain
   storeUrl: "https://hosting.syberinfo.com.au",

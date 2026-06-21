@@ -347,6 +347,61 @@ export default buildConfig({
         { name: "order", type: "number", defaultValue: 0 },
       ],
     },
+    {
+      slug: "partners",
+      labels: { singular: "Partner", plural: "Partners" },
+      admin: {
+        useAsTitle: "name",
+        defaultColumns: ["name", "order"],
+        group: "Content",
+      },
+      access: { read: () => true },
+      defaultSort: "order",
+      fields: [
+        { name: "name", type: "text", required: true },
+        {
+          name: "logo",
+          type: "text",
+          admin: { description: "Optional logo image URL (else the name is shown)" },
+        },
+        { name: "order", type: "number", defaultValue: 0 },
+      ],
+    },
+    {
+      slug: "faqs",
+      labels: { singular: "FAQ", plural: "FAQs" },
+      admin: {
+        useAsTitle: "question",
+        defaultColumns: ["question", "category", "order"],
+        group: "Content",
+      },
+      access: { read: () => true },
+      defaultSort: "order",
+      fields: [
+        { name: "question", type: "text", required: true },
+        { name: "answer", type: "textarea", required: true },
+        { name: "category", type: "text", defaultValue: "General" },
+        { name: "order", type: "number", defaultValue: 0 },
+      ],
+    },
+    {
+      slug: "subscribers",
+      labels: { singular: "Subscriber", plural: "Subscribers" },
+      admin: {
+        useAsTitle: "email",
+        defaultColumns: ["email", "source", "createdAt"],
+        group: "Enquiries",
+      },
+      access: { create: () => true },
+      fields: [
+        { name: "email", type: "email", required: true, unique: true },
+        {
+          name: "source",
+          type: "text",
+          admin: { description: "Where they subscribed from (footer, blog, …)" },
+        },
+      ],
+    },
   ],
   globals: [
     {
@@ -388,6 +443,8 @@ export default buildConfig({
       testimonials: seedTestimonials,
       posts: seedPosts,
       plans: seedPlans,
+      partners: seedPartners,
+      generalFaqs: seedFaqs,
       stats: seedStats,
       steps: seedSteps,
     } = await import("@/lib/data");
@@ -507,6 +564,35 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedPlans.length} pricing plans`);
+    }
+
+    const { totalDocs: partnerCount } = await payload.count({
+      collection: "partners",
+    });
+    if (partnerCount === 0) {
+      for (const p of seedPartners) {
+        await payload.create({
+          collection: "partners",
+          data: { name: p.name, order: p.order },
+        });
+      }
+      payload.logger.info(`Seeded ${seedPartners.length} partners`);
+    }
+
+    const { totalDocs: faqCount } = await payload.count({ collection: "faqs" });
+    if (faqCount === 0) {
+      for (const f of seedFaqs) {
+        await payload.create({
+          collection: "faqs",
+          data: {
+            question: f.question,
+            answer: f.answer,
+            category: f.category,
+            order: f.order,
+          },
+        });
+      }
+      payload.logger.info(`Seeded ${seedFaqs.length} FAQs`);
     }
 
     // Seed the homepage content global (stats + process steps) if empty.

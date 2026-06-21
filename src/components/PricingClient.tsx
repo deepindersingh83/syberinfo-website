@@ -1,8 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PLAN_CATEGORIES, type Plan } from "@/lib/data";
+
+type Term = "annual" | "monthly";
+type Gst = "ex" | "inc";
+
+function priceNum(p?: string) {
+  if (!p) return null;
+  const n = parseFloat(p.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+function fmt(n: number) {
+  return n.toLocaleString("en-AU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function display(base: number, gst: Gst) {
+  return gst === "inc" ? base * 1.1 : base;
+}
 
 function PlanCta({ plan }: { plan: Plan }) {
   const cls = `mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-all ${
@@ -11,14 +31,11 @@ function PlanCta({ plan }: { plan: Plan }) {
       : "border border-white/15 bg-white/5 text-foreground hover:bg-white/10"
   }`;
   const external = plan.ctaHref.startsWith("http");
-  if (external) {
-    return (
-      <a href={plan.ctaHref} target="_blank" rel="noopener noreferrer" className={cls}>
-        {plan.ctaLabel} →
-      </a>
-    );
-  }
-  return (
+  return external ? (
+    <a href={plan.ctaHref} target="_blank" rel="noopener noreferrer" className={cls}>
+      {plan.ctaLabel} →
+    </a>
+  ) : (
     <Link href={plan.ctaHref} className={cls}>
       {plan.ctaLabel} →
     </Link>
@@ -26,16 +43,36 @@ function PlanCta({ plan }: { plan: Plan }) {
 }
 
 export default function PricingClient({ plans }: { plans: Plan[] }) {
-  const [term, setTerm] = useState<"annual" | "monthly">("annual");
+  const [term, setTerm] = useState<Term>("annual");
+  const [gst, setGst] = useState<Gst>("ex");
 
   const categories = PLAN_CATEGORIES.filter((c) =>
     plans.some((p) => p.category === c),
   );
 
+  // Plans usable in the calculator (per-user priced)
+  const pricedPlans = useMemo(
+    () => plans.filter((p) => priceNum(p.priceAnnual) !== null),
+    [plans],
+  );
+  const [calcPlan, setCalcPlan] = useState(pricedPlans[0]?.name ?? "");
+  const [users, setUsers] = useState(5);
+
+  const selected = pricedPlans.find((p) => p.name === calcPlan);
+  const perUser =
+    selected &&
+    display(
+      priceNum(term === "annual" ? selected.priceAnnual : selected.priceMonthly) ??
+        priceNum(selected.priceAnnual) ??
+        0,
+      gst,
+    );
+  const monthlyTotal = perUser ? perUser * users : 0;
+
   return (
     <>
-      {/* Annual / monthly toggle */}
-      <div className="mt-10 flex justify-center">
+      {/* Toggles */}
+      <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
         <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 text-sm font-semibold">
           {(["annual", "monthly"] as const).map((t) => (
             <button
@@ -51,12 +88,27 @@ export default function PricingClient({ plans }: { plans: Plan[] }) {
             </button>
           ))}
         </div>
+        <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 text-sm font-semibold">
+          {(["ex", "inc"] as const).map((g) => (
+            <button
+              key={g}
+              onClick={() => setGst(g)}
+              className={`rounded-full px-5 py-2 transition-colors ${
+                gst === g
+                  ? "bg-gradient-to-r from-cyan-glow to-violet-glow text-ink-950"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              {g === "ex" ? "ex-GST" : "inc-GST"}
+            </button>
+          ))}
+        </div>
       </div>
       <p className="mt-3 text-center text-xs text-muted">
-        Prices in AUD, ex‑GST.{" "}
+        Prices in AUD.{" "}
         {term === "annual"
-          ? "Annual plans are billed yearly."
-          : "Monthly (flexible) — no lock‑in; indicative, confirmed at checkout."}
+          ? "Annual plans billed yearly."
+          : "Monthly (flexible) — indicative, confirmed at checkout."}
       </p>
 
       {categories.map((category) => {
@@ -68,8 +120,9 @@ export default function PricingClient({ plans }: { plans: Plan[] }) {
             <h2 className="text-2xl font-bold sm:text-3xl">{category}</h2>
             <div className="mt-8 grid gap-6 md:grid-cols-3">
               {items.map((plan) => {
-                const price =
-                  term === "annual" ? plan.priceAnnual : plan.priceMonthly;
+                const base = priceNum(
+                  term === "annual" ? plan.priceAnnual : plan.priceMonthly,
+                );
                 return (
                   <div
                     key={plan.name}
@@ -88,18 +141,14 @@ export default function PricingClient({ plans }: { plans: Plan[] }) {
                     {plan.blurb && (
                       <p className="mt-1 text-sm text-muted">{plan.blurb}</p>
                     )}
-
                     <div className="mt-5">
-                      {price ? (
+                      {base !== null ? (
                         <div className="flex items-baseline gap-1">
                           <span className="text-3xl font-extrabold text-gradient">
-                            ${price}
+                            ${fmt(display(base, gst))}
                           </span>
                           {plan.unit && (
-                            <span className="text-sm text-muted">
-                              {" "}
-                              {plan.unit}
-                            </span>
+                            <span className="text-sm text-muted"> {plan.unit}</span>
                           )}
                         </div>
                       ) : (
@@ -107,8 +156,10 @@ export default function PricingClient({ plans }: { plans: Plan[] }) {
                           Custom
                         </div>
                       )}
+                      <p className="mt-1 text-xs text-muted">
+                        {gst === "inc" ? "incl. GST" : "+ GST"}
+                      </p>
                     </div>
-
                     <ul className="mt-5 flex-1 space-y-2.5">
                       {plan.features.map((f) => (
                         <li
@@ -120,7 +171,6 @@ export default function PricingClient({ plans }: { plans: Plan[] }) {
                         </li>
                       ))}
                     </ul>
-
                     <PlanCta plan={plan} />
                   </div>
                 );
@@ -129,6 +179,50 @@ export default function PricingClient({ plans }: { plans: Plan[] }) {
           </section>
         );
       })}
+
+      {/* Quote calculator */}
+      {pricedPlans.length > 0 && (
+        <section className="mt-20 rounded-3xl glass p-8 sm:p-10">
+          <h2 className="text-2xl font-bold">Estimate your monthly cost</h2>
+          <p className="mt-2 text-sm text-muted">
+            Pick a plan and the number of users for an instant estimate.
+          </p>
+          <div className="mt-6 grid gap-6 md:grid-cols-[1fr_1fr_auto] md:items-end">
+            <label className="flex flex-col gap-2 text-sm">
+              <span className="font-medium">Plan</span>
+              <select
+                value={calcPlan}
+                onChange={(e) => setCalcPlan(e.target.value)}
+                className="rounded-xl border border-white/10 bg-ink-900/60 px-4 py-3 text-sm outline-none focus:border-cyan-glow/60"
+              >
+                {pricedPlans.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.category} — {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-2 text-sm">
+              <span className="font-medium">Users</span>
+              <input
+                type="number"
+                min={1}
+                value={users}
+                onChange={(e) => setUsers(Math.max(1, Number(e.target.value)))}
+                className="rounded-xl border border-white/10 bg-ink-900/60 px-4 py-3 text-sm outline-none focus:border-cyan-glow/60"
+              />
+            </label>
+            <div className="rounded-2xl bg-white/5 px-6 py-4 text-center">
+              <div className="text-3xl font-extrabold text-gradient">
+                ${fmt(monthlyTotal)}
+              </div>
+              <div className="text-xs text-muted">
+                per month ({gst === "inc" ? "incl." : "+"} GST) · ${fmt(monthlyTotal * 12)}/yr
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }

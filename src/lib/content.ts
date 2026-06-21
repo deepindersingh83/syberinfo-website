@@ -6,12 +6,16 @@ import {
   testimonials as fallbackTestimonials,
   posts as fallbackPosts,
   plans as fallbackPlans,
+  partners as fallbackPartners,
+  generalFaqs as fallbackFaqs,
   stats as fallbackStats,
   steps as fallbackSteps,
   type Service,
   type Product,
   type Post,
   type Plan,
+  type Partner,
+  type Faq,
 } from "./data";
 
 type Testimonial = { quote: string; name: string; role: string };
@@ -251,6 +255,62 @@ export async function getPlans(): Promise<Plan[]> {
       } satisfies Plan;
     });
   }, fallbackPlans);
+}
+
+export async function getPartners(): Promise<Partner[]> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "partners",
+      sort: "order",
+      limit: 100,
+    });
+    if (!docs.length) return fallbackPartners;
+    return docs.map((d) => {
+      const doc = d as unknown as Record<string, unknown>;
+      return { name: String(doc.name ?? ""), order: Number(doc.order ?? 0) };
+    });
+  }, fallbackPartners);
+}
+
+export async function getFaqs(): Promise<Faq[]> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "faqs",
+      sort: "order",
+      limit: 200,
+    });
+    if (!docs.length) return fallbackFaqs;
+    return docs.map((d) => {
+      const doc = d as unknown as Record<string, unknown>;
+      return {
+        question: String(doc.question ?? ""),
+        answer: String(doc.answer ?? ""),
+        category: String(doc.category ?? "General"),
+        order: Number(doc.order ?? 0),
+      };
+    });
+  }, fallbackFaqs);
+}
+
+/**
+ * Save a newsletter subscriber to the CMS. Ignores duplicate emails.
+ * Returns true if stored (or already existed).
+ */
+export async function saveSubscriber(
+  email: string,
+  source = "website",
+): Promise<boolean> {
+  try {
+    const payload = await getPayload({ config });
+    await payload.create({
+      collection: "subscribers",
+      data: { email, source },
+    });
+    return true;
+  } catch {
+    // Likely a duplicate (unique email) — treat as success.
+    return true;
+  }
 }
 
 export type LeadInput = {

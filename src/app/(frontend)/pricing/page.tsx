@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Aurora, SectionHeading, ButtonLink } from "@/components/ui";
 import PricingClient from "@/components/PricingClient";
+import CompareTable from "@/components/CompareTable";
 import { getPlans } from "@/lib/content";
 
 export const metadata: Metadata = {
@@ -28,6 +29,8 @@ export default async function PricingPage() {
         />
 
         <PricingClient plans={plans} />
+
+        <CompareTable />
 
         {/* Reassurance / CTA */}
         <div className="mt-20 rounded-[2rem] border border-white/10 bg-ink-800/60 p-10 text-center">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
+import PartnersCarousel from "@/components/PartnersCarousel";
 import { Aurora, Eyebrow, SectionHeading, ButtonLink } from "@/components/ui";
 import {
   getServices,
@@ -258,6 +259,9 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* ───────────────────── Partners ───────────────────── */}
+      <PartnersCarousel />
 
       {/* ───────────────────── Testimonials ───────────────────── */}
       <section className="relative py-24 sm:py-32">

@@ -1,10 +1,26 @@
 import Link from "next/link";
 import { nav, site, store } from "@/lib/site";
 import { services } from "@/lib/data";
+import NewsletterForm from "@/components/NewsletterForm";
 
 export default function Footer() {
   return (
     <footer className="relative mt-24 border-t border-white/10 bg-ink-900/60">
+      {/* Newsletter */}
+      <div className="border-b border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-10 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h3 className="text-lg font-bold">Get tips to grow online</h3>
+            <p className="mt-1 text-sm text-muted">
+              Occasional, no-spam insights on web, SEO and marketing.
+            </p>
+          </div>
+          <div className="w-full max-w-md">
+            <NewsletterForm source="footer" />
+          </div>
+        </div>
+      </div>
+
       <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 md:grid-cols-2 lg:grid-cols-4">
         <div>
           <Link href="/" className="flex items-center gap-2.5">
@@ -74,6 +90,14 @@ export default function Footer() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-6 text-sm text-muted sm:flex-row">
           <p>© {new Date().getFullYear()} {site.name}. All rights reserved.</p>
           <div className="flex items-center gap-5">
+            <Link href="/faq" className="transition-colors hover:text-foreground">FAQ</Link>
+            <a
+              href={site.statusUrl}
+              className="inline-flex items-center gap-2 transition-colors hover:text-foreground"
+            >
+              <span className="h-2 w-2 rounded-full bg-green-400 animate-glow" />
+              99.9% uptime
+            </a>
             <a href={site.social.facebook} className="transition-colors hover:text-foreground">Facebook</a>
             <a href={site.social.instagram} className="transition-colors hover:text-foreground">Instagram</a>
             <a href={site.social.linkedin} className="transition-colors hover:text-foreground">LinkedIn</a>
