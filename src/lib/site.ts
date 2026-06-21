@@ -38,5 +38,5 @@ export const store = {
   linux: `${site.storeUrl}/index.php?rp=/store/linux-hosting`,
   google: `${site.storeUrl}/index.php?rp=/store/google-workspace`,
   microsoft: `${site.storeUrl}/index.php?rp=/store/microsoft-365`,
-  login: `${site.storeUrl}/clientarea.php`,
+  login: site.storeUrl,
 } as const;
