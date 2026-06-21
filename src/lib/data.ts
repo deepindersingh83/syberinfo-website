@@ -1,4 +1,4 @@
-import { store } from "@/lib/site";
+import { store } from "./site";
 
 export type Service = {
   slug: string;

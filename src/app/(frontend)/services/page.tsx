@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Reveal from "@/components/Reveal";
 import { Aurora, SectionHeading, ButtonLink } from "@/components/ui";
-import { services } from "@/lib/data";
+import { getServices } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Services",
@@ -9,7 +9,10 @@ export const metadata: Metadata = {
     "Web development, design & branding, SEO, social media (SMO) and digital marketing services for Australian businesses.",
 };
 
-export default function ServicesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ServicesPage() {
+  const services = await getServices();
   return (
     <div className="relative pt-36 pb-12">
       <Aurora />

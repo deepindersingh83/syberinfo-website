@@ -1,10 +1,19 @@
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import { Aurora, Eyebrow, SectionHeading, ButtonLink } from "@/components/ui";
-import { services, products, stats, steps, testimonials } from "@/lib/data";
+import { stats, steps } from "@/lib/data";
+import { getServices, getProducts, getTestimonials } from "@/lib/content";
 import { site } from "@/lib/site";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [services, products, testimonials] = await Promise.all([
+    getServices(),
+    getProducts(),
+    getTestimonials(),
+  ]);
+
   return (
     <>
       {/* ───────────────────────── Hero ───────────────────────── */}

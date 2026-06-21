@@ -21,6 +21,12 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3000,
         HOSTNAME: "127.0.0.1",
+        // Payload CMS — set real values here or in the shell environment.
+        // PAYLOAD_SECRET: required, long random string (openssl rand -base64 32)
+        // DATABASE_URI: absolute SQLite path, e.g. file:/home/<site-user>/syberinfo.db
+        PAYLOAD_SECRET: process.env.PAYLOAD_SECRET,
+        DATABASE_URI: process.env.DATABASE_URI,
+        RESEND_API_KEY: process.env.RESEND_API_KEY,
       },
     },
   ],

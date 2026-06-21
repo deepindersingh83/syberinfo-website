@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withPayload } from "@payloadcms/next/withPayload";
 
 /**
  * If you must serve the site under a sub-path (e.g. https://syberinfo.com/app),
@@ -14,4 +15,4 @@ const nextConfig: NextConfig = {
   output: "standalone",
 };
 
-export default nextConfig;
+export default withPayload(nextConfig);

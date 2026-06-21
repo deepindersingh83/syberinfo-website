@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Reveal from "@/components/Reveal";
 import { Aurora, SectionHeading, ButtonLink } from "@/components/ui";
-import { products } from "@/lib/data";
+import { getProducts } from "@/lib/content";
 import { site, store } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -10,7 +10,10 @@ export const metadata: Metadata = {
     "Domains, web hosting, Linux hosting, Google Workspace and Microsoft 365 — buy and manage through SyberInfo's secure client portal.",
 };
 
-export default function ProductsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ProductsPage() {
+  const products = await getProducts();
   return (
     <div className="relative pt-36 pb-12">
       <Aurora />

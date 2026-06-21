@@ -52,16 +52,48 @@ Check it's alive: `pm2 status` and `curl -I http://127.0.0.1:3000` → expect `2
 
 ## 5. Environment variables
 
-Create `.env.local` in the project root (see `.env.example`) for the contact
-form email:
+Create `.env.local` in the project root (see `.env.example`):
 
 ```
+# Payload CMS (required)
+PAYLOAD_SECRET=<long-random-string>          # openssl rand -base64 32
+DATABASE_URI=file:/home/<site-user>/syberinfo.db   # ABSOLUTE path
+
+# Contact form email (optional)
 RESEND_API_KEY=...
 CONTACT_TO=admin@syberinfo.com.au
 CONTACT_FROM=SyberInfo <noreply@syberinfo.com.au>
 ```
 
+> Use an **absolute** `DATABASE_URI` so the SQLite file lives outside `.next/`
+> and survives redeploys (the standalone server runs from `.next/standalone`).
+
 Rebuild / `pm2 restart syberinfo` after changes.
+
+## 6. Payload CMS admin
+
+The site includes a self-hosted **Payload CMS** (SQLite) for managing content.
+
+- **Schema & seed are automatic.** On first production start, the bundled
+  migrations create the tables and the initial Services / Products /
+  Testimonials are seeded from code. No manual migrate step on deploy.
+- **Create your admin account:** visit `https://syberinfo.com.au/admin` and
+  Payload will prompt you to create the first user.
+- **Edit content:** Services, Products and Testimonials are editable under the
+  *Content* group. Changes appear on the site immediately (pages are dynamic).
+- **Database backup:** just copy the SQLite file referenced by `DATABASE_URI`.
+
+### Changing collections/fields later
+
+After editing `payload.config.ts` (adding fields, collections, etc.):
+
+```bash
+npm run payload migrate:create   # writes a new file in src/migrations
+git add src/migrations && git commit -m "cms: migration"
+```
+
+The new migration is bundled and auto-applied on the next production start.
+Run `npm run generate:importmap` too if you add custom admin components.
 
 ## Updating the site
 
