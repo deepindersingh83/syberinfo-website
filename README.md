@@ -13,7 +13,13 @@ domains, hosting and Google/Microsoft Workspace as a reseller.
 | Backend      | **Next.js Route Handlers** (`/api/contact`)       | Lead capture without a separate server |
 | Email        | **Resend** (optional, via env)                    | Transactional contact emails |
 | Fonts        | Sora + JetBrains Mono (`next/font`)               | Self-hosted, no layout shift |
-| Deploy       | **Vercel** (recommended) or any Node host         | Native Next.js support |
+| Database     | **MySQL / MariaDB** (when needed) + Prisma        | Native to CloudPanel; Prisma supports it fully |
+| Deploy       | **CloudPanel** Node.js site on your VPS           | Matches your existing hosting/control panel |
+
+> **Hosting note:** SyberInfo runs **CloudPanel.io**, which provides MySQL/MariaDB
+> (not PostgreSQL) and can serve Node.js apps behind its built-in reverse proxy.
+> Deploy this app as a **Node.js site** in CloudPanel (`npm run build` then
+> `npm run start`, or PM2), or use Vercel if you prefer a managed platform.
 
 Products (domains/hosting/Workspace) are sold through the existing client
 portal at **hosting.syberinfo.com.au** — the site deep-links into it rather
@@ -62,7 +68,10 @@ src/
 
 ## Suggested next steps
 
-- Add a **blog** (MDX or Sanity/Payload CMS) to fuel content SEO.
+- Add a **blog** (MDX, or a headless CMS) to fuel content SEO.
 - Wire `RESEND_API_KEY` (or your CRM webhook) for live lead delivery.
+- When you need a database (e.g. quotes, blog), use **MySQL/MariaDB** via
+  CloudPanel with Prisma (`provider = "mysql"`).
 - Add real testimonials, case studies and an OpenGraph image.
-- Point `syberinfo.com.au` DNS at Vercel and enable analytics.
+- Deploy as a CloudPanel **Node.js site**, point `syberinfo.com.au` at it and
+  enable analytics.
