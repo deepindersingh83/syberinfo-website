@@ -1014,5 +1014,64 @@ export default buildConfig({
       });
       payload.logger.info("Seeded homepage content (stats & process)");
     }
+
+    // Optional demo billing data for previewing the customer portal.
+    // Enable with SEED_DEMO=true (never in production with real data).
+    if (process.env.SEED_DEMO === "true") {
+      const { totalDocs } = await payload.count({ collection: "customers" });
+      if (totalDocs === 0) {
+        const days = (n: number) =>
+          new Date(Date.now() + n * 86_400_000).toISOString();
+        const cust = await payload.create({
+          collection: "customers",
+          data: {
+            email: "demo@syberinfo.com",
+            password: "Password123!",
+            name: "Demo Customer",
+            company: "Demo Pty Ltd",
+            abn: "12 345 678 901",
+            phone: "+61 400 000 000",
+          },
+        });
+        await payload.create({
+          collection: "subscriptions",
+          data: {
+            label: "Web Hosting — demo.com.au",
+            customer: cust.id,
+            domain: "demo.com.au",
+            status: "active",
+            billingCycle: "annually",
+            recurringAmount: 99,
+            nextDueDate: days(200),
+          },
+        });
+        await payload.create({
+          collection: "client-domains",
+          data: {
+            domain: "demo.com.au",
+            customer: cust.id,
+            registrar: "SyberInfo",
+            registeredDate: days(-160),
+            expiryDate: days(205),
+            autoRenew: true,
+            status: "active",
+          },
+        });
+        await payload.create({
+          collection: "invoices",
+          data: {
+            number: "INV-1001",
+            customer: cust.id,
+            items: [{ description: "Web Hosting — annually", quantity: 1, amount: 99 }],
+            subtotal: 99,
+            tax: 9.9,
+            total: 108.9,
+            status: "unpaid",
+            dueDate: days(14),
+          },
+        });
+        payload.logger.info("Seeded demo customer (demo@syberinfo.com / Password123!)");
+      }
+    }
   },
 });
