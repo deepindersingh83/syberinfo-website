@@ -6,6 +6,7 @@ import * as migration_20260621_193826_round5_extras from './20260621_193826_roun
 import * as migration_20260621_212859_phase1 from './20260621_212859_phase1';
 import * as migration_20260622_155315_media from './20260622_155315_media';
 import * as migration_20260622_170310_service_pricing from './20260622_170310_service_pricing';
+import * as migration_20260622_172425_billing_phase0 from './20260622_172425_billing_phase0';
 
 export const migrations = [
   {
@@ -46,6 +47,11 @@ export const migrations = [
   {
     up: migration_20260622_170310_service_pricing.up,
     down: migration_20260622_170310_service_pricing.down,
-    name: '20260622_170310_service_pricing'
+    name: '20260622_170310_service_pricing',
+  },
+  {
+    up: migration_20260622_172425_billing_phase0.up,
+    down: migration_20260622_172425_billing_phase0.down,
+    name: '20260622_172425_billing_phase0'
   },
 ];

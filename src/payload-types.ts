@@ -64,6 +64,7 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    customers: CustomerAuthOperations;
   };
   blocks: {};
   collections: {
@@ -81,6 +82,14 @@ export interface Config {
     'help-articles': HelpArticle;
     projects: Project;
     'data-requests': DataRequest;
+    customers: Customer;
+    orders: Order;
+    subscriptions: Subscription;
+    invoices: Invoice;
+    transactions: Transaction;
+    'client-domains': ClientDomain;
+    tickets: Ticket;
+    coupons: Coupon;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -102,6 +111,14 @@ export interface Config {
     'help-articles': HelpArticlesSelect<false> | HelpArticlesSelect<true>;
     projects: ProjectsSelect<false> | ProjectsSelect<true>;
     'data-requests': DataRequestsSelect<false> | DataRequestsSelect<true>;
+    customers: CustomersSelect<false> | CustomersSelect<true>;
+    orders: OrdersSelect<false> | OrdersSelect<true>;
+    subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
+    invoices: InvoicesSelect<false> | InvoicesSelect<true>;
+    transactions: TransactionsSelect<false> | TransactionsSelect<true>;
+    'client-domains': ClientDomainsSelect<false> | ClientDomainsSelect<true>;
+    tickets: TicketsSelect<false> | TicketsSelect<true>;
+    coupons: CouponsSelect<false> | CouponsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -113,21 +130,41 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'site-content': SiteContent;
+    'billing-settings': BillingSetting;
   };
   globalsSelect: {
     'site-content': SiteContentSelect<false> | SiteContentSelect<true>;
+    'billing-settings': BillingSettingsSelect<false> | BillingSettingsSelect<true>;
   };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
   };
-  user: User;
+  user: User | Customer;
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
 export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface CustomerAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -585,6 +622,196 @@ export interface DataRequest {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: number;
+  name: string;
+  company?: string | null;
+  phone?: string | null;
+  abn?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  suburb?: string | null;
+  state?: string | null;
+  postcode?: string | null;
+  country?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'customers';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders".
+ */
+export interface Order {
+  id: number;
+  customer?: (number | null) | Customer;
+  items?:
+    | {
+        description: string;
+        /**
+         * e.g. monthly, annually, once-off
+         */
+        cycle?: string | null;
+        quantity?: number | null;
+        /**
+         * ex-GST, AUD
+         */
+        unitPrice?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * ex-GST, AUD
+   */
+  total?: number | null;
+  status?: ('pending' | 'active' | 'cancelled' | 'fraud') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions".
+ */
+export interface Subscription {
+  id: number;
+  /**
+   * e.g. Web Hosting — example.com.au
+   */
+  label: string;
+  customer?: (number | null) | Customer;
+  domain?: string | null;
+  status?: ('pending' | 'active' | 'suspended' | 'terminated' | 'cancelled') | null;
+  /**
+   * monthly, annually, …
+   */
+  billingCycle?: string | null;
+  /**
+   * ex-GST, AUD
+   */
+  recurringAmount?: number | null;
+  nextDueDate?: string | null;
+  /**
+   * e.g. cPanel username (Phase 3)
+   */
+  provisioningRef?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invoices".
+ */
+export interface Invoice {
+  id: number;
+  number: string;
+  customer?: (number | null) | Customer;
+  items?:
+    | {
+        description: string;
+        quantity?: number | null;
+        /**
+         * ex-GST line total, AUD
+         */
+        amount?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  subtotal?: number | null;
+  /**
+   * GST
+   */
+  tax?: number | null;
+  total?: number | null;
+  status?: ('unpaid' | 'paid' | 'overdue' | 'refunded' | 'cancelled') | null;
+  dueDate?: string | null;
+  paidDate?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactions".
+ */
+export interface Transaction {
+  id: number;
+  reference?: string | null;
+  invoice?: (number | null) | Invoice;
+  customer?: (number | null) | Customer;
+  gateway?: string | null;
+  amount?: number | null;
+  status?: ('pending' | 'succeeded' | 'failed' | 'refunded') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "client-domains".
+ */
+export interface ClientDomain {
+  id: number;
+  domain: string;
+  customer?: (number | null) | Customer;
+  registrar?: string | null;
+  registeredDate?: string | null;
+  expiryDate?: string | null;
+  autoRenew?: boolean | null;
+  status?: ('pending' | 'active' | 'expired' | 'transferred-away') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tickets".
+ */
+export interface Ticket {
+  id: number;
+  subject: string;
+  customer?: (number | null) | Customer;
+  department?: ('support' | 'billing' | 'sales') | null;
+  status?: ('open' | 'answered' | 'customer-reply' | 'closed') | null;
+  priority?: ('low' | 'medium' | 'high') | null;
+  messages?:
+    | {
+        author?: string | null;
+        message: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "coupons".
+ */
+export interface Coupon {
+  id: number;
+  code: string;
+  type?: ('percent' | 'fixed') | null;
+  value: number;
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -662,12 +889,49 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'data-requests';
         value: number | DataRequest;
+      } | null)
+    | ({
+        relationTo: 'customers';
+        value: number | Customer;
+      } | null)
+    | ({
+        relationTo: 'orders';
+        value: number | Order;
+      } | null)
+    | ({
+        relationTo: 'subscriptions';
+        value: number | Subscription;
+      } | null)
+    | ({
+        relationTo: 'invoices';
+        value: number | Invoice;
+      } | null)
+    | ({
+        relationTo: 'transactions';
+        value: number | Transaction;
+      } | null)
+    | ({
+        relationTo: 'client-domains';
+        value: number | ClientDomain;
+      } | null)
+    | ({
+        relationTo: 'tickets';
+        value: number | Ticket;
+      } | null)
+    | ({
+        relationTo: 'coupons';
+        value: number | Coupon;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'customers';
+        value: number | Customer;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -677,10 +941,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'customers';
+        value: number | Customer;
+      };
   key?: string | null;
   value?:
     | {
@@ -1036,6 +1305,159 @@ export interface DataRequestsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers_select".
+ */
+export interface CustomersSelect<T extends boolean = true> {
+  name?: T;
+  company?: T;
+  phone?: T;
+  abn?: T;
+  addressLine1?: T;
+  addressLine2?: T;
+  suburb?: T;
+  state?: T;
+  postcode?: T;
+  country?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders_select".
+ */
+export interface OrdersSelect<T extends boolean = true> {
+  customer?: T;
+  items?:
+    | T
+    | {
+        description?: T;
+        cycle?: T;
+        quantity?: T;
+        unitPrice?: T;
+        id?: T;
+      };
+  total?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions_select".
+ */
+export interface SubscriptionsSelect<T extends boolean = true> {
+  label?: T;
+  customer?: T;
+  domain?: T;
+  status?: T;
+  billingCycle?: T;
+  recurringAmount?: T;
+  nextDueDate?: T;
+  provisioningRef?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invoices_select".
+ */
+export interface InvoicesSelect<T extends boolean = true> {
+  number?: T;
+  customer?: T;
+  items?:
+    | T
+    | {
+        description?: T;
+        quantity?: T;
+        amount?: T;
+        id?: T;
+      };
+  subtotal?: T;
+  tax?: T;
+  total?: T;
+  status?: T;
+  dueDate?: T;
+  paidDate?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactions_select".
+ */
+export interface TransactionsSelect<T extends boolean = true> {
+  reference?: T;
+  invoice?: T;
+  customer?: T;
+  gateway?: T;
+  amount?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "client-domains_select".
+ */
+export interface ClientDomainsSelect<T extends boolean = true> {
+  domain?: T;
+  customer?: T;
+  registrar?: T;
+  registeredDate?: T;
+  expiryDate?: T;
+  autoRenew?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tickets_select".
+ */
+export interface TicketsSelect<T extends boolean = true> {
+  subject?: T;
+  customer?: T;
+  department?: T;
+  status?: T;
+  priority?: T;
+  messages?:
+    | T
+    | {
+        author?: T;
+        message?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "coupons_select".
+ */
+export interface CouponsSelect<T extends boolean = true> {
+  code?: T;
+  type?: T;
+  value?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -1105,6 +1527,29 @@ export interface SiteContent {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billing-settings".
+ */
+export interface BillingSetting {
+  id: number;
+  companyLegalName?: string | null;
+  abn?: string | null;
+  addressLines?: string | null;
+  /**
+   * GST percentage
+   */
+  gstRate?: number | null;
+  gstRegistered?: boolean | null;
+  invoicePrefix?: string | null;
+  invoiceNextNumber?: number | null;
+  /**
+   * Days overdue before suspension
+   */
+  gracePeriodDays?: number | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-content_select".
  */
 export interface SiteContentSelect<T extends boolean = true> {
@@ -1122,6 +1567,23 @@ export interface SiteContentSelect<T extends boolean = true> {
         text?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billing-settings_select".
+ */
+export interface BillingSettingsSelect<T extends boolean = true> {
+  companyLegalName?: T;
+  abn?: T;
+  addressLines?: T;
+  gstRate?: T;
+  gstRegistered?: T;
+  invoicePrefix?: T;
+  invoiceNextNumber?: T;
+  gracePeriodDays?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
