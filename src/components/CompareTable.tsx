@@ -1,7 +1,7 @@
 /** Static feature matrix comparing Google Workspace and Microsoft 365. */
 const rows: { feature: string; google: string; microsoft: string }[] = [
   { feature: "Business email on your domain", google: "Gmail", microsoft: "Outlook / Exchange" },
-  { feature: "Starting price (per user/mo, ex-GST)", google: "$8.40", microsoft: "$9.00" },
+  { feature: "Starting price (per user/mo, ex-GST)", google: "$9.90", microsoft: "$9.00" },
   { feature: "Cloud storage (entry plan)", google: "30 GB", microsoft: "1 TB OneDrive" },
   { feature: "Desktop Office apps", google: "Web-based (Docs/Sheets)", microsoft: "Yes (from Standard)" },
   { feature: "Video meetings", google: "Google Meet", microsoft: "Microsoft Teams" },

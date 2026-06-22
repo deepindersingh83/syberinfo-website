@@ -416,7 +416,7 @@ export const products: Product[] = [
       "Run your business on professional email and Google's productivity suite. Google Workspace gives your team custom @yourdomain email, plus Docs, Sheets, Drive, Meet and Gemini AI — all collaborative, secure and accessible anywhere.",
     icon: "✉️",
     href: store.google,
-    price: "from $8.40/user/mo",
+    price: "from $9.90/user/mo",
     bullets: ["Business email", "30GB+ storage", "Gemini & Meet"],
     sections: [
       {
@@ -628,8 +628,8 @@ export const plans: Plan[] = [
     category: "Google Workspace",
     name: "Business Starter",
     blurb: "Professional email and the essentials for small teams.",
-    priceAnnual: "8.40",
-    priceMonthly: "10.10",
+    priceAnnual: "9.90",
+    priceMonthly: "11.90",
     unit: "per user / month",
     features: [
       "Custom business email",
@@ -645,8 +645,8 @@ export const plans: Plan[] = [
     category: "Google Workspace",
     name: "Business Standard",
     blurb: "More storage and bigger meetings for growing teams.",
-    priceAnnual: "16.80",
-    priceMonthly: "20.20",
+    priceAnnual: "19.80",
+    priceMonthly: "23.80",
     unit: "per user / month",
     features: [
       "Everything in Starter",
@@ -663,8 +663,8 @@ export const plans: Plan[] = [
     category: "Google Workspace",
     name: "Business Plus",
     blurb: "Advanced security and controls for larger teams.",
-    priceAnnual: "22.80",
-    priceMonthly: "27.40",
+    priceAnnual: "30.90",
+    priceMonthly: "37.00",
     unit: "per user / month",
     features: [
       "Everything in Standard",
