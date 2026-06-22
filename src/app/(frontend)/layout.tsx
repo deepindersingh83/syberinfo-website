@@ -59,13 +59,15 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "ProfessionalService",
+  "@type": ["ProfessionalService", "LocalBusiness"],
   name: site.name,
   url: site.url,
   email: site.email,
+  telephone: site.phone,
   description: site.description,
   areaServed: "AU",
   address: { "@type": "PostalAddress", addressCountry: "AU" },
+  identifier: { "@type": "PropertyValue", propertyID: "ABN", value: site.abn },
   sameAs: Object.values(site.social),
   makesOffer: [
     "Web Development",

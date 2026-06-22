@@ -8,6 +8,8 @@ import {
   plans as fallbackPlans,
   partners as fallbackPartners,
   generalFaqs as fallbackFaqs,
+  helpArticles as fallbackHelp,
+  projects as fallbackProjects,
   stats as fallbackStats,
   steps as fallbackSteps,
   type Service,
@@ -16,6 +18,8 @@ import {
   type Plan,
   type Partner,
   type Faq,
+  type HelpArticle,
+  type Project,
 } from "./data";
 
 type Testimonial = { quote: string; name: string; role: string };
@@ -201,15 +205,23 @@ function mapPost(d: unknown): Post {
     date: String(doc.date ?? ""),
     readMins: Number(doc.readMins ?? 4),
     body: String(doc.body ?? ""),
+    status: (doc.status as Post["status"]) ?? "published",
   } satisfies Post;
 }
 
 export async function getPosts(): Promise<Post[]> {
   return tryPayload(async (payload) => {
+    const now = new Date().toISOString();
     const { docs } = await payload.find({
       collection: "posts",
       sort: "-date",
       limit: 100,
+      where: {
+        and: [
+          { status: { equals: "published" } },
+          { date: { less_than_equal: now } },
+        ],
+      },
     });
     if (!docs.length) return fallbackPosts;
     return docs.map(mapPost);
@@ -310,6 +322,91 @@ export async function saveSubscriber(
   } catch {
     // Likely a duplicate (unique email) — treat as success.
     return true;
+  }
+}
+
+function mapHelp(d: unknown): HelpArticle {
+  const doc = d as Record<string, unknown>;
+  return {
+    slug: String(doc.slug ?? ""),
+    title: String(doc.title ?? ""),
+    category: String(doc.category ?? "General"),
+    excerpt: String(doc.excerpt ?? ""),
+    body: String(doc.body ?? ""),
+    order: Number(doc.order ?? 0),
+  } satisfies HelpArticle;
+}
+
+export async function getHelpArticles(): Promise<HelpArticle[]> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "help-articles",
+      sort: "order",
+      limit: 200,
+    });
+    if (!docs.length) return fallbackHelp;
+    return docs.map(mapHelp);
+  }, fallbackHelp);
+}
+
+export async function getHelpArticle(slug: string): Promise<HelpArticle | null> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "help-articles",
+      where: { slug: { equals: slug } },
+      limit: 1,
+    });
+    if (docs.length) return mapHelp(docs[0]);
+    return fallbackHelp.find((h) => h.slug === slug) ?? null;
+  }, fallbackHelp.find((h) => h.slug === slug) ?? null);
+}
+
+function mapProject(d: unknown): Project {
+  const doc = d as Record<string, unknown>;
+  return {
+    slug: String(doc.slug ?? ""),
+    title: String(doc.title ?? ""),
+    industry: String(doc.industry ?? ""),
+    services: Array.isArray(doc.services)
+      ? (doc.services as { service: string }[]).map((s) => s.service)
+      : [],
+    summary: String(doc.summary ?? ""),
+    beforeImage: doc.beforeImage ? String(doc.beforeImage) : undefined,
+    afterImage: doc.afterImage ? String(doc.afterImage) : undefined,
+    url: doc.url ? String(doc.url) : undefined,
+    results: Array.isArray(doc.results)
+      ? (doc.results as { result: string }[]).map((r) => r.result)
+      : [],
+    order: Number(doc.order ?? 0),
+  } satisfies Project;
+}
+
+export async function getProjects(): Promise<Project[]> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "projects",
+      sort: "order",
+      limit: 200,
+    });
+    if (!docs.length) return fallbackProjects;
+    return docs.map(mapProject);
+  }, fallbackProjects);
+}
+
+export async function saveDataRequest(
+  email: string,
+  type: "export" | "delete",
+  details?: string,
+): Promise<boolean> {
+  try {
+    const payload = await getPayload({ config });
+    await payload.create({
+      collection: "data-requests",
+      data: { email, type, details, status: "new" },
+    });
+    return true;
+  } catch {
+    return false;
   }
 }
 

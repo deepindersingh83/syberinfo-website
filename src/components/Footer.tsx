@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { nav, site, store } from "@/lib/site";
+import { nav, legalNav, site, store } from "@/lib/site";
 import { services } from "@/lib/data";
 import NewsletterForm from "@/components/NewsletterForm";
 
@@ -34,6 +34,13 @@ export default function Footer() {
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
             {site.description}
           </p>
+          <div className="mt-5 space-y-1 text-xs text-muted">
+            <p className="inline-flex items-center gap-2">
+              <span aria-hidden>🇦🇺</span> Australian owned &amp; operated
+            </p>
+            <p>Data hosted in {site.dataLocation}</p>
+            <p>ABN {site.abn}</p>
+          </div>
         </div>
 
         <div>
@@ -77,6 +84,23 @@ export default function Footer() {
               </li>
             ))}
           </ul>
+          <ul className="mt-4 space-y-2.5">
+            <li>
+              <Link href="/help" className="text-sm text-muted transition-colors hover:text-foreground">
+                Help Centre
+              </Link>
+            </li>
+            <li>
+              <Link href="/faq" className="text-sm text-muted transition-colors hover:text-foreground">
+                FAQ
+              </Link>
+            </li>
+            <li>
+              <Link href="/find-my-plan" className="text-sm text-muted transition-colors hover:text-foreground">
+                Find your plan
+              </Link>
+            </li>
+          </ul>
           <div className="mt-6 space-y-1 text-sm text-muted">
             <a className="block transition-colors hover:text-foreground" href={`mailto:${site.email}`}>
               {site.email}
@@ -87,10 +111,14 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-6 text-sm text-muted sm:flex-row">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-6 text-sm text-muted lg:flex-row lg:items-center lg:justify-between">
           <p>© {new Date().getFullYear()} {site.name}. All rights reserved.</p>
-          <div className="flex items-center gap-5">
-            <Link href="/faq" className="transition-colors hover:text-foreground">FAQ</Link>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            {legalNav.map((l) => (
+              <Link key={l.href} href={l.href} className="transition-colors hover:text-foreground">
+                {l.label}
+              </Link>
+            ))}
             <a
               href={site.statusUrl}
               className="inline-flex items-center gap-2 transition-colors hover:text-foreground"

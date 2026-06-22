@@ -12,6 +12,10 @@ export const site = {
     "SyberInfo builds high-performing websites and digital marketing that grow Australian businesses — web development, design, SEO, SMO, plus domains, hosting and Google & Microsoft Workspace as a trusted reseller.",
   email: "admin@syberinfo.com.au",
   phone: "+61 0000 000 000",
+  // Australian business details (edit these). ABN shown in footer + schema.
+  abn: "00 000 000 000",
+  australianOwned: true,
+  dataLocation: "Australia",
   // WhatsApp number in international format, digits only (no + or spaces).
   // Leave empty to hide the floating WhatsApp button. e.g. "61400000000"
   whatsapp: "",
@@ -32,9 +36,18 @@ export const nav = [
   { label: "Services", href: "/services" },
   { label: "Products", href: "/products" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Work", href: "/work" },
   { label: "Blog", href: "/blog" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
+] as const;
+
+// Secondary links surfaced in the footer.
+export const legalNav = [
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
+  { label: "Acceptable Use", href: "/acceptable-use" },
+  { label: "Refund Policy", href: "/refund-policy" },
 ] as const;
 
 /** Quick links into the existing hosting/store platform. */

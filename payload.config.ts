@@ -245,6 +245,16 @@ export default buildConfig({
         },
         { name: "category", type: "text" },
         { name: "author", type: "text", defaultValue: "SyberInfo Team" },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "published",
+          options: [
+            { label: "Draft", value: "draft" },
+            { label: "Published", value: "published" },
+          ],
+          admin: { description: "Drafts are hidden from the public blog" },
+        },
         { name: "date", type: "date", required: true },
         {
           name: "readMins",
@@ -402,6 +412,102 @@ export default buildConfig({
         },
       ],
     },
+    {
+      slug: "help-articles",
+      labels: { singular: "Help Article", plural: "Help Centre" },
+      admin: {
+        useAsTitle: "title",
+        defaultColumns: ["title", "category", "order"],
+        group: "Content",
+      },
+      access: { read: () => true },
+      defaultSort: "order",
+      fields: [
+        { name: "title", type: "text", required: true },
+        { name: "slug", type: "text", required: true, unique: true },
+        { name: "category", type: "text", defaultValue: "General" },
+        { name: "excerpt", type: "textarea" },
+        {
+          name: "body",
+          type: "textarea",
+          required: true,
+          admin: { description: "Separate paragraphs with a blank line." },
+        },
+        { name: "order", type: "number", defaultValue: 0 },
+      ],
+    },
+    {
+      slug: "projects",
+      labels: { singular: "Project", plural: "Portfolio" },
+      admin: {
+        useAsTitle: "title",
+        defaultColumns: ["title", "industry", "order"],
+        group: "Content",
+      },
+      access: { read: () => true },
+      defaultSort: "order",
+      fields: [
+        { name: "title", type: "text", required: true },
+        { name: "slug", type: "text", required: true, unique: true },
+        { name: "industry", type: "text" },
+        {
+          name: "services",
+          type: "array",
+          fields: [{ name: "service", type: "text", required: true }],
+        },
+        { name: "summary", type: "textarea" },
+        {
+          name: "beforeImage",
+          type: "text",
+          admin: { description: "Optional 'before' image URL for the slider" },
+        },
+        {
+          name: "afterImage",
+          type: "text",
+          admin: { description: "Optional 'after' image URL for the slider" },
+        },
+        { name: "url", type: "text", admin: { description: "Live site URL (optional)" } },
+        {
+          name: "results",
+          type: "array",
+          fields: [{ name: "result", type: "text", required: true }],
+        },
+        { name: "order", type: "number", defaultValue: 0 },
+      ],
+    },
+    {
+      slug: "data-requests",
+      labels: { singular: "Data Request", plural: "Data Requests" },
+      admin: {
+        useAsTitle: "email",
+        defaultColumns: ["email", "type", "status", "createdAt"],
+        group: "Enquiries",
+      },
+      access: { create: () => true },
+      fields: [
+        { name: "email", type: "email", required: true },
+        {
+          name: "type",
+          type: "select",
+          required: true,
+          options: [
+            { label: "Access / export my data", value: "export" },
+            { label: "Delete my data", value: "delete" },
+          ],
+        },
+        { name: "details", type: "textarea" },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "new",
+          options: [
+            { label: "New", value: "new" },
+            { label: "In progress", value: "in-progress" },
+            { label: "Completed", value: "completed" },
+          ],
+        },
+      ],
+    },
   ],
   globals: [
     {
@@ -445,6 +551,8 @@ export default buildConfig({
       plans: seedPlans,
       partners: seedPartners,
       generalFaqs: seedFaqs,
+      helpArticles: seedHelp,
+      projects: seedProjects,
       stats: seedStats,
       steps: seedSteps,
     } = await import("@/lib/data");
@@ -534,6 +642,7 @@ export default buildConfig({
             excerpt: p.excerpt,
             category: p.category,
             author: p.author,
+            status: "published",
             date: p.date,
             readMins: p.readMins,
             body: p.body,
@@ -541,6 +650,50 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedPosts.length} posts`);
+    }
+
+    const { totalDocs: helpCount } = await payload.count({
+      collection: "help-articles",
+    });
+    if (helpCount === 0) {
+      for (const h of seedHelp) {
+        await payload.create({
+          collection: "help-articles",
+          data: {
+            title: h.title,
+            slug: h.slug,
+            category: h.category,
+            excerpt: h.excerpt,
+            body: h.body,
+            order: h.order,
+          },
+        });
+      }
+      payload.logger.info(`Seeded ${seedHelp.length} help articles`);
+    }
+
+    const { totalDocs: projectCount } = await payload.count({
+      collection: "projects",
+    });
+    if (projectCount === 0) {
+      for (const pr of seedProjects) {
+        await payload.create({
+          collection: "projects",
+          data: {
+            title: pr.title,
+            slug: pr.slug,
+            industry: pr.industry,
+            services: pr.services.map((service) => ({ service })),
+            summary: pr.summary,
+            beforeImage: pr.beforeImage,
+            afterImage: pr.afterImage,
+            url: pr.url,
+            results: pr.results.map((result) => ({ result })),
+            order: pr.order,
+          },
+        });
+      }
+      payload.logger.info(`Seeded ${seedProjects.length} projects`);
     }
 
     const { totalDocs: planCount } = await payload.count({ collection: "plans" });

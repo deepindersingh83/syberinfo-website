@@ -55,8 +55,14 @@ export default function CookieConsent() {
     <div className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-2xl rounded-2xl glass p-5 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <p className="flex-1 text-sm text-muted">
-          We use cookies to analyse traffic and improve your experience. See our
-          approach to privacy. You can accept or decline analytics cookies.
+          We use cookies to analyse traffic and improve your experience. See our{" "}
+          <a
+            href="/privacy"
+            className="font-semibold text-foreground underline underline-offset-2"
+          >
+            Privacy Policy
+          </a>
+          . You can accept or decline analytics cookies.
         </p>
         <div className="flex shrink-0 gap-2">
           <button

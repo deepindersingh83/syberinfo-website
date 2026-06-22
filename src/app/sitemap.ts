@@ -1,6 +1,11 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/lib/site";
-import { getServices, getProducts, getPosts } from "@/lib/content";
+import {
+  getServices,
+  getProducts,
+  getPosts,
+  getHelpArticles,
+} from "@/lib/content";
 
 export const dynamic = "force-dynamic";
 
@@ -12,23 +17,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/services",
     "/products",
     "/pricing",
+    "/work",
     "/blog",
+    "/help",
     "/faq",
+    "/find-my-plan",
     "/about",
     "/contact",
-  ].map(
-    (path) => ({
-      url: `${site.url}${path}`,
-      lastModified: now,
-      changeFrequency: "monthly" as const,
-      priority: path === "" ? 1 : 0.8,
-    }),
-  );
+    "/privacy",
+    "/terms",
+    "/acceptable-use",
+    "/refund-policy",
+    "/data-request",
+  ].map((path) => ({
+    url: `${site.url}${path}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: path === "" ? 1 : 0.8,
+  }));
 
-  const [services, products, posts] = await Promise.all([
+  const [services, products, posts, help] = await Promise.all([
     getServices(),
     getProducts(),
     getPosts(),
+    getHelpArticles(),
   ]);
 
   const serviceRoutes = services.map((s) => ({
@@ -52,5 +64,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...serviceRoutes, ...productRoutes, ...postRoutes];
+  const helpRoutes = help.map((h) => ({
+    url: `${site.url}/help/${h.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
+
+  return [
+    ...staticRoutes,
+    ...serviceRoutes,
+    ...productRoutes,
+    ...postRoutes,
+    ...helpRoutes,
+  ];
 }

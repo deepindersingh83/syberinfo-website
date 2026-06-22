@@ -77,6 +77,9 @@ export interface Config {
     partners: Partner;
     faqs: Faq;
     subscribers: Subscriber;
+    'help-articles': HelpArticle;
+    projects: Project;
+    'data-requests': DataRequest;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -94,6 +97,9 @@ export interface Config {
     partners: PartnersSelect<false> | PartnersSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
+    'help-articles': HelpArticlesSelect<false> | HelpArticlesSelect<true>;
+    projects: ProjectsSelect<false> | ProjectsSelect<true>;
+    'data-requests': DataRequestsSelect<false> | DataRequestsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -318,6 +324,10 @@ export interface Post {
   excerpt: string;
   category?: string | null;
   author?: string | null;
+  /**
+   * Drafts are hidden from the public blog
+   */
+  status?: ('draft' | 'published') | null;
   date: string;
   /**
    * Estimated read time in minutes
@@ -429,6 +439,75 @@ export interface Subscriber {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "help-articles".
+ */
+export interface HelpArticle {
+  id: number;
+  title: string;
+  slug: string;
+  category?: string | null;
+  excerpt?: string | null;
+  /**
+   * Separate paragraphs with a blank line.
+   */
+  body: string;
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "projects".
+ */
+export interface Project {
+  id: number;
+  title: string;
+  slug: string;
+  industry?: string | null;
+  services?:
+    | {
+        service: string;
+        id?: string | null;
+      }[]
+    | null;
+  summary?: string | null;
+  /**
+   * Optional 'before' image URL for the slider
+   */
+  beforeImage?: string | null;
+  /**
+   * Optional 'after' image URL for the slider
+   */
+  afterImage?: string | null;
+  /**
+   * Live site URL (optional)
+   */
+  url?: string | null;
+  results?:
+    | {
+        result: string;
+        id?: string | null;
+      }[]
+    | null;
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-requests".
+ */
+export interface DataRequest {
+  id: number;
+  email: string;
+  type: 'export' | 'delete';
+  details?: string | null;
+  status?: ('new' | 'in-progress' | 'completed') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -490,6 +569,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subscribers';
         value: number | Subscriber;
+      } | null)
+    | ({
+        relationTo: 'help-articles';
+        value: number | HelpArticle;
+      } | null)
+    | ({
+        relationTo: 'projects';
+        value: number | Project;
+      } | null)
+    | ({
+        relationTo: 'data-requests';
+        value: number | DataRequest;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -657,6 +748,7 @@ export interface PostsSelect<T extends boolean = true> {
   excerpt?: T;
   category?: T;
   author?: T;
+  status?: T;
   date?: T;
   readMins?: T;
   body?: T;
@@ -731,6 +823,60 @@ export interface FaqsSelect<T extends boolean = true> {
 export interface SubscribersSelect<T extends boolean = true> {
   email?: T;
   source?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "help-articles_select".
+ */
+export interface HelpArticlesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  category?: T;
+  excerpt?: T;
+  body?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "projects_select".
+ */
+export interface ProjectsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  industry?: T;
+  services?:
+    | T
+    | {
+        service?: T;
+        id?: T;
+      };
+  summary?: T;
+  beforeImage?: T;
+  afterImage?: T;
+  url?: T;
+  results?:
+    | T
+    | {
+        result?: T;
+        id?: T;
+      };
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-requests_select".
+ */
+export interface DataRequestsSelect<T extends boolean = true> {
+  email?: T;
+  type?: T;
+  details?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }

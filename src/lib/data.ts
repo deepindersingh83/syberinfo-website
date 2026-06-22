@@ -536,6 +536,7 @@ export type Post = {
   date: string; // ISO date
   readMins: number;
   body: string; // paragraphs separated by blank lines
+  status?: "draft" | "published";
 };
 
 export const posts: Post[] = [
@@ -889,5 +890,127 @@ export const generalFaqs: Faq[] = [
     answer:
       "Get in touch via our contact form or email. We'll have a quick chat about your goals, then send a tailored proposal and quote — usually within one business day.",
     order: 7,
+  },
+];
+
+export type HelpArticle = {
+  slug: string;
+  title: string;
+  category: string;
+  excerpt: string;
+  body: string; // paragraphs separated by blank lines
+  order: number;
+};
+
+// Knowledge Base / Help Centre articles. Editable in the CMS.
+export const helpArticles: HelpArticle[] = [
+  {
+    slug: "point-domain-to-our-hosting",
+    title: "How to point your domain to our hosting",
+    category: "Domains & DNS",
+    excerpt: "Update your nameservers or A record so your domain loads your website on our hosting.",
+    order: 1,
+    body: `If you registered your domain with us, this is already done for you. If your domain is elsewhere, you have two options.
+
+Option 1 — Nameservers: Log in to your domain registrar and set the nameservers we provided (they look like ns1.syberinfo.com / ns2.syberinfo.com). This hands DNS management to us.
+
+Option 2 — A record: If you want to keep DNS where it is, create an A record pointing to the server IP we gave you, and a CNAME for www.
+
+DNS changes can take up to 24–48 hours to propagate worldwide, though they're often much faster. Still stuck? Contact us and we'll do it for you.`,
+  },
+  {
+    slug: "set-up-business-email",
+    title: "Setting up your business email",
+    category: "Email",
+    excerpt: "Get your name@yourdomain email working on your phone and computer.",
+    order: 2,
+    body: `Once your Google Workspace or Microsoft 365 mailbox is active, you can add it to any device.
+
+On your phone: open your mail app, choose "Add account", pick Google or Exchange/Microsoft, and sign in with your full email address and password.
+
+On a computer: use the Gmail/Outlook web app, or add the account to Outlook or Apple Mail using the same details.
+
+If you're migrating from an old provider, we can move your existing emails, contacts and calendars across — usually with no downtime. Just ask.`,
+  },
+  {
+    slug: "install-ssl-certificate",
+    title: "Why my site shows 'Not secure' and how to fix it",
+    category: "Hosting",
+    excerpt: "Enable the free SSL certificate so your site loads securely over HTTPS.",
+    order: 3,
+    body: `A "Not secure" warning means your site is loading over HTTP without an SSL certificate.
+
+Every hosting plan with us includes a free SSL certificate. In most cases it's installed automatically. If you still see the warning, it usually means the certificate needs to be activated or the site needs to be forced to HTTPS.
+
+Let us know your domain and we'll enable SSL and set up an automatic HTTP-to-HTTPS redirect so every visitor gets the secure version.`,
+  },
+  {
+    slug: "access-client-portal",
+    title: "Accessing your client portal & invoices",
+    category: "Billing",
+    excerpt: "Manage your services, renewals and invoices in one place.",
+    order: 4,
+    body: `Your domains, hosting and email subscriptions are managed in our client portal at hosting.syberinfo.com.au.
+
+From there you can view active services, download tax invoices, update payment details and renew or upgrade plans.
+
+Forgot your password? Use the "Forgot password" link on the login page, or contact us and we'll help you back in.`,
+  },
+];
+
+export type Project = {
+  slug: string;
+  title: string;
+  industry: string;
+  services: string[];
+  summary: string;
+  beforeImage?: string;
+  afterImage?: string;
+  url?: string;
+  results: string[];
+  order: number;
+};
+
+// Portfolio / case studies. Replace placeholder before/after images in the CMS.
+export const projects: Project[] = [
+  {
+    slug: "retail-co-rebuild",
+    title: "Retail Co. — website rebuild & SEO",
+    industry: "Retail",
+    services: ["Web Development", "SEO"],
+    summary:
+      "A tired, slow website rebuilt into a fast, modern store that ranks and converts.",
+    results: ["2× online enquiries", "68% faster load time", "Page 1 for key terms"],
+    order: 1,
+  },
+  {
+    slug: "trades-group-site",
+    title: "Trades Group — lead-generating site",
+    industry: "Trades & Construction",
+    services: ["Web Development", "Design & Branding"],
+    summary:
+      "A clean, mobile-first site with clear calls to action that turns visitors into quote requests.",
+    results: ["+140% quote requests", "Mobile-first redesign", "Booking form integrated"],
+    order: 2,
+  },
+  {
+    slug: "services-firm-marketing",
+    title: "Services Firm — digital marketing",
+    industry: "Professional Services",
+    services: ["Digital Marketing", "SEO"],
+    summary:
+      "A full-funnel campaign across search and social delivering a steady flow of qualified leads.",
+    results: ["3.4× return on ad spend", "Cost per lead down 40%", "Clear monthly reporting"],
+    order: 3,
+  },
+  {
+    slug: "hospitality-brand",
+    title: "Hospitality Brand — identity & web",
+    industry: "Hospitality",
+    services: ["Design & Branding", "Web Development"],
+    summary:
+      "A memorable brand identity paired with a beautiful, bookings-ready website.",
+    results: ["New brand identity", "Online bookings live", "+55% direct bookings"],
+    order: 4,
   },
 ];
