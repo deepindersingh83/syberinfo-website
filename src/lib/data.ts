@@ -2,6 +2,15 @@ import { store } from "./site";
 
 export type ServiceSection = { heading: string; body: string };
 export type ServiceFaq = { question: string; answer: string };
+export type ServicePlan = {
+  name: string;
+  price?: string; // e.g. "from $990" — leave blank for "Get a quote"
+  unit?: string; // e.g. "once-off" or "per month"
+  features: string[];
+  highlight?: boolean;
+  ctaLabel?: string;
+  ctaHref?: string;
+};
 
 export type Service = {
   slug: string;
@@ -14,6 +23,7 @@ export type Service = {
   benefits: string[];
   sections: ServiceSection[];
   faqs: ServiceFaq[];
+  pricing?: ServicePlan[]; // optional pricing table on the service page
   accent: string; // tailwind gradient stops
 };
 
@@ -68,6 +78,31 @@ export const services: Service[] = [
         question: "Will I be able to update the site myself?",
         answer:
           "Yes. We can set you up with an easy-to-use CMS and a short walkthrough so your team can edit content without touching code.",
+      },
+    ],
+    pricing: [
+      {
+        name: "Launch",
+        price: "from $990",
+        unit: "once-off",
+        features: ["Up to 5 pages", "Mobile-responsive", "Basic SEO", "Contact form"],
+        ctaLabel: "Get a quote",
+        ctaHref: "/contact",
+      },
+      {
+        name: "Business",
+        price: "from $2,490",
+        unit: "once-off",
+        features: ["Up to 12 pages", "Easy-to-edit CMS", "Blog & advanced SEO", "Analytics setup"],
+        highlight: true,
+        ctaLabel: "Get a quote",
+        ctaHref: "/contact",
+      },
+      {
+        name: "E-commerce / Custom",
+        features: ["Online store or custom build", "Payments & integrations", "Custom features", "Priority support"],
+        ctaLabel: "Get a quote",
+        ctaHref: "/contact",
       },
     ],
     accent: "from-cyan-glow to-violet-glow",

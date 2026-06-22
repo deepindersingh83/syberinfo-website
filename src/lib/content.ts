@@ -69,6 +69,19 @@ function mapService(d: unknown): Service {
           answer: f.answer,
         }))
       : [],
+    pricing: Array.isArray(doc.pricing)
+      ? (doc.pricing as Record<string, unknown>[]).map((pl) => ({
+          name: String(pl.name ?? ""),
+          price: pl.price ? String(pl.price) : undefined,
+          unit: pl.unit ? String(pl.unit) : undefined,
+          features: Array.isArray(pl.features)
+            ? (pl.features as { feature: string }[]).map((f) => f.feature)
+            : [],
+          highlight: Boolean(pl.highlight),
+          ctaLabel: pl.ctaLabel ? String(pl.ctaLabel) : "Get a quote",
+          ctaHref: pl.ctaHref ? String(pl.ctaHref) : "/contact",
+        }))
+      : [],
   } satisfies Service;
 }
 

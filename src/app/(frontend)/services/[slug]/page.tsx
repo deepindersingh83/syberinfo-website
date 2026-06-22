@@ -147,6 +147,73 @@ export default async function ServiceDetailPage({ params }: Params) {
         </div>
       </section>
 
+      {/* Pricing table */}
+      {service.pricing && service.pricing.length > 0 && (
+        <section className="mx-auto mt-16 max-w-5xl px-5">
+          <h2 className="text-center text-2xl font-bold sm:text-3xl">
+            {service.title} packages
+          </h2>
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
+            {service.pricing.map((plan) => {
+              const external = (plan.ctaHref ?? "/contact").startsWith("http");
+              const ctaCls = `mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition-all ${
+                plan.highlight
+                  ? "bg-gradient-to-r from-cyan-glow to-violet-glow text-ink-950 hover:scale-[1.02]"
+                  : "border border-white/15 bg-white/5 text-foreground hover:bg-white/10"
+              }`;
+              return (
+                <div
+                  key={plan.name}
+                  className={`relative flex h-full flex-col rounded-3xl p-7 ${
+                    plan.highlight
+                      ? "border border-cyan-glow/40 bg-gradient-to-b from-cyan-glow/10 to-transparent"
+                      : "glass"
+                  }`}
+                >
+                  {plan.highlight && (
+                    <span className="absolute right-5 top-5 rounded-full bg-cyan-glow px-3 py-1 text-xs font-bold text-ink-950">
+                      Popular
+                    </span>
+                  )}
+                  <h3 className="text-lg font-bold">{plan.name}</h3>
+                  <div className="mt-3">
+                    {plan.price ? (
+                      <span className="text-2xl font-extrabold text-gradient">
+                        {plan.price}
+                      </span>
+                    ) : (
+                      <span className="text-2xl font-extrabold text-gradient">
+                        Custom
+                      </span>
+                    )}
+                    {plan.unit && (
+                      <span className="ml-1 text-sm text-muted">{plan.unit}</span>
+                    )}
+                  </div>
+                  <ul className="mt-5 flex-1 space-y-2.5">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm text-foreground/90">
+                        <span className="mt-0.5 text-cyan-glow">✓</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  {external ? (
+                    <a href={plan.ctaHref} target="_blank" rel="noopener noreferrer" className={ctaCls}>
+                      {plan.ctaLabel ?? "Get a quote"} →
+                    </a>
+                  ) : (
+                    <Link href={plan.ctaHref ?? "/contact"} className={ctaCls}>
+                      {plan.ctaLabel ?? "Get a quote"} →
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* FAQs */}
       {service.faqs.length > 0 && (
         <section className="mx-auto mt-16 max-w-3xl px-5">

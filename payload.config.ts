@@ -127,6 +127,29 @@ export default buildConfig({
           ],
         },
         {
+          name: "pricing",
+          type: "array",
+          label: "Pricing table",
+          admin: { description: "Optional pricing tiers shown on this service's page" },
+          fields: [
+            { name: "name", type: "text", required: true },
+            {
+              name: "price",
+              type: "text",
+              admin: { description: "e.g. from $990 — leave blank for 'Get a quote'" },
+            },
+            { name: "unit", type: "text", admin: { description: "e.g. once-off, per month" } },
+            {
+              name: "features",
+              type: "array",
+              fields: [{ name: "feature", type: "text", required: true }],
+            },
+            { name: "highlight", type: "checkbox", defaultValue: false },
+            { name: "ctaLabel", type: "text", defaultValue: "Get a quote" },
+            { name: "ctaHref", type: "text", defaultValue: "/contact" },
+          ],
+        },
+        {
           name: "order",
           type: "number",
           defaultValue: 0,
@@ -603,6 +626,15 @@ export default buildConfig({
               body: sec.body,
             })),
             faqs: s.faqs.map((f) => ({ question: f.question, answer: f.answer })),
+            pricing: (s.pricing ?? []).map((pl) => ({
+              name: pl.name,
+              price: pl.price,
+              unit: pl.unit,
+              features: pl.features.map((feature) => ({ feature })),
+              highlight: pl.highlight ?? false,
+              ctaLabel: pl.ctaLabel,
+              ctaHref: pl.ctaHref,
+            })),
             order: i,
           },
         });

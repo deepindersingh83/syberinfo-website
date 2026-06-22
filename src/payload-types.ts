@@ -234,6 +234,32 @@ export interface Service {
       }[]
     | null;
   /**
+   * Optional pricing tiers shown on this service's page
+   */
+  pricing?:
+    | {
+        name: string;
+        /**
+         * e.g. from $990 — leave blank for 'Get a quote'
+         */
+        price?: string | null;
+        /**
+         * e.g. once-off, per month
+         */
+        unit?: string | null;
+        features?:
+          | {
+              feature: string;
+              id?: string | null;
+            }[]
+          | null;
+        highlight?: boolean | null;
+        ctaLabel?: string | null;
+        ctaHref?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * Lower numbers show first
    */
   order?: number | null;
@@ -738,6 +764,23 @@ export interface ServicesSelect<T extends boolean = true> {
     | {
         question?: T;
         answer?: T;
+        id?: T;
+      };
+  pricing?:
+    | T
+    | {
+        name?: T;
+        price?: T;
+        unit?: T;
+        features?:
+          | T
+          | {
+              feature?: T;
+              id?: T;
+            };
+        highlight?: T;
+        ctaLabel?: T;
+        ctaHref?: T;
         id?: T;
       };
   order?: T;
