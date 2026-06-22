@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Turnstile from "@/components/Turnstile";
 
 export default function DataRequestForm() {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">(
     "idle",
   );
+  const [token, setToken] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -15,7 +17,7 @@ export default function DataRequestForm() {
       const res = await fetch("/api/data-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, turnstileToken: token }),
       });
       if (!res.ok) throw new Error();
       setStatus("done");
@@ -68,6 +70,9 @@ export default function DataRequestForm() {
             className="rounded-xl border border-white/10 bg-ink-900/60 px-4 py-3 text-sm outline-none focus:border-cyan-glow/60"
           />
         </label>
+      </div>
+      <div className="mt-4">
+        <Turnstile onToken={setToken} />
       </div>
       {status === "error" && (
         <p className="mt-3 text-sm text-pink-glow">

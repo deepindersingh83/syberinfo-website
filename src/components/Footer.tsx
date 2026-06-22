@@ -100,6 +100,11 @@ export default function Footer() {
                 Find your plan
               </Link>
             </li>
+            <li>
+              <Link href="/seo-audit" className="text-sm text-muted transition-colors hover:text-foreground">
+                Free SEO audit
+              </Link>
+            </li>
           </ul>
           <div className="mt-6 space-y-1 text-sm text-muted">
             <a className="block transition-colors hover:text-foreground" href={`mailto:${site.email}`}>

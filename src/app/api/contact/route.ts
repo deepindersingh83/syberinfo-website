@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { site } from "@/lib/site";
 import { saveLead } from "@/lib/content";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -11,11 +13,20 @@ type Payload = {
   service?: string;
   message?: string;
   company_website?: string; // honeypot
+  turnstileToken?: string;
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: Request) {
+  const ip = clientIp(req);
+  if (!rateLimit(`contact:${ip}`, 5, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429 },
+    );
+  }
+
   let data: Payload;
   try {
     data = await req.json();
@@ -26,6 +37,13 @@ export async function POST(req: Request) {
   // Honeypot: bots fill hidden fields → silently accept, do nothing.
   if (data.company_website) {
     return NextResponse.json({ ok: true });
+  }
+
+  if (!(await verifyTurnstile(data.turnstileToken, ip))) {
+    return NextResponse.json(
+      { error: "Spam check failed. Please try again." },
+      { status: 400 },
+    );
   }
 
   const name = data.name?.trim();

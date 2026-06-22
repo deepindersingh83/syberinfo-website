@@ -1,16 +1,33 @@
 import { NextResponse } from "next/server";
 import { saveSubscriber } from "@/lib/content";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: Request) {
-  let body: { email?: string; source?: string };
+  const ip = clientIp(req);
+  if (!rateLimit(`newsletter:${ip}`, 5, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429 },
+    );
+  }
+
+  let body: { email?: string; source?: string; turnstileToken?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+
+  if (!(await verifyTurnstile(body.turnstileToken, ip))) {
+    return NextResponse.json(
+      { error: "Spam check failed. Please try again." },
+      { status: 400 },
+    );
   }
 
   const email = body.email?.trim().toLowerCase();
