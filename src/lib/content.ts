@@ -194,6 +194,15 @@ export async function getTestimonials(): Promise<Testimonial[]> {
   }, fallbackTestimonials);
 }
 
+/** Extract a usable URL from a populated Payload upload relationship. */
+function mediaUrl(v: unknown): string | undefined {
+  if (v && typeof v === "object" && "url" in v) {
+    const u = (v as { url?: unknown }).url;
+    return typeof u === "string" && u ? u : undefined;
+  }
+  return undefined;
+}
+
 function mapPost(d: unknown): Post {
   const doc = d as Record<string, unknown>;
   return {
@@ -206,6 +215,7 @@ function mapPost(d: unknown): Post {
     readMins: Number(doc.readMins ?? 4),
     body: String(doc.body ?? ""),
     status: (doc.status as Post["status"]) ?? "published",
+    coverImage: mediaUrl(doc.coverImage),
   } satisfies Post;
 }
 
@@ -279,7 +289,11 @@ export async function getPartners(): Promise<Partner[]> {
     if (!docs.length) return fallbackPartners;
     return docs.map((d) => {
       const doc = d as unknown as Record<string, unknown>;
-      return { name: String(doc.name ?? ""), order: Number(doc.order ?? 0) };
+      return {
+        name: String(doc.name ?? ""),
+        order: Number(doc.order ?? 0),
+        logo: mediaUrl(doc.logoMedia) ?? (doc.logo ? String(doc.logo) : undefined),
+      };
     });
   }, fallbackPartners);
 }
@@ -371,8 +385,10 @@ function mapProject(d: unknown): Project {
       ? (doc.services as { service: string }[]).map((s) => s.service)
       : [],
     summary: String(doc.summary ?? ""),
-    beforeImage: doc.beforeImage ? String(doc.beforeImage) : undefined,
-    afterImage: doc.afterImage ? String(doc.afterImage) : undefined,
+    beforeImage:
+      mediaUrl(doc.beforeMedia) ?? (doc.beforeImage ? String(doc.beforeImage) : undefined),
+    afterImage:
+      mediaUrl(doc.afterMedia) ?? (doc.afterImage ? String(doc.afterImage) : undefined),
     url: doc.url ? String(doc.url) : undefined,
     results: Array.isArray(doc.results)
       ? (doc.results as { result: string }[]).map((r) => r.result)

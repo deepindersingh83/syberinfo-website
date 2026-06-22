@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Aurora, ButtonLink } from "@/components/ui";
 import { getPost, getPosts } from "@/lib/content";
@@ -82,6 +83,19 @@ export default async function PostPage({ params }: Params) {
           {post.title}
         </h1>
         <p className="mt-4 text-lg leading-relaxed text-muted">{post.excerpt}</p>
+
+        {post.coverImage && (
+          <div className="relative mt-8 aspect-[16/9] w-full overflow-hidden rounded-3xl">
+            <Image
+              src={post.coverImage}
+              alt={post.title}
+              fill
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover"
+              priority
+            />
+          </div>
+        )}
 
         <div className="mt-10 space-y-5 text-[1.05rem] leading-relaxed text-foreground/90">
           {paragraphs.map((para, i) => (

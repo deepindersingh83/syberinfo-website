@@ -68,6 +68,10 @@ CONTACT_FROM=SyberInfo <noreply@syberinfo.com.au>
 > Use an **absolute** `DATABASE_URI` so the SQLite file lives outside `.next/`
 > and survives redeploys (the standalone server runs from `.next/standalone`).
 
+> **Media uploads:** set `MEDIA_DIR` to an absolute path outside the project
+> (e.g. `/home/<site-user>/media`) so images uploaded in the admin survive
+> redeploys. Image optimisation uses `sharp` (already a dependency).
+
 Rebuild / `pm2 restart syberinfo` after changes.
 
 ## 6. Payload CMS admin

@@ -537,6 +537,7 @@ export type Post = {
   readMins: number;
   body: string; // paragraphs separated by blank lines
   status?: "draft" | "published";
+  coverImage?: string; // image URL (from CMS upload)
 };
 
 export const posts: Post[] = [
@@ -821,7 +822,7 @@ export const plans: Plan[] = [
   },
 ];
 
-export type Partner = { name: string; order: number };
+export type Partner = { name: string; order: number; logo?: string };
 
 // Technology & platform partners shown in the homepage carousel. Editable in
 // the CMS (add a logo image later if desired).

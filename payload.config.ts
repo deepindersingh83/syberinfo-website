@@ -243,6 +243,7 @@ export default buildConfig({
           required: true,
           admin: { description: "Short summary shown on cards & meta description" },
         },
+        { name: "coverImage", type: "upload", relationTo: "media" },
         { name: "category", type: "text" },
         { name: "author", type: "text", defaultValue: "SyberInfo Team" },
         {
@@ -369,10 +370,11 @@ export default buildConfig({
       defaultSort: "order",
       fields: [
         { name: "name", type: "text", required: true },
+        { name: "logoMedia", type: "upload", relationTo: "media" },
         {
           name: "logo",
           type: "text",
-          admin: { description: "Optional logo image URL (else the name is shown)" },
+          admin: { description: "Or paste a logo image URL (upload above is preferred)" },
         },
         { name: "order", type: "number", defaultValue: 0 },
       ],
@@ -411,6 +413,25 @@ export default buildConfig({
           admin: { description: "Where they subscribed from (footer, blog, …)" },
         },
       ],
+    },
+    {
+      slug: "media",
+      labels: { singular: "Media", plural: "Media" },
+      admin: { group: "Content" },
+      access: { read: () => true },
+      upload: {
+        // Persist uploads outside the build output in production. Set MEDIA_DIR
+        // to an absolute path on the server (see DEPLOY.md) so files survive
+        // redeploys.
+        staticDir: process.env.MEDIA_DIR || path.resolve(dirname, "media"),
+        mimeTypes: ["image/*"],
+        imageSizes: [
+          { name: "thumbnail", width: 400 },
+          { name: "card", width: 768 },
+          { name: "hero", width: 1600 },
+        ],
+      },
+      fields: [{ name: "alt", type: "text" }],
     },
     {
       slug: "help-articles",
@@ -456,15 +477,17 @@ export default buildConfig({
           fields: [{ name: "service", type: "text", required: true }],
         },
         { name: "summary", type: "textarea" },
+        { name: "beforeMedia", type: "upload", relationTo: "media" },
+        { name: "afterMedia", type: "upload", relationTo: "media" },
         {
           name: "beforeImage",
           type: "text",
-          admin: { description: "Optional 'before' image URL for the slider" },
+          admin: { description: "Or paste a 'before' image URL (upload preferred)" },
         },
         {
           name: "afterImage",
           type: "text",
-          admin: { description: "Optional 'after' image URL for the slider" },
+          admin: { description: "Or paste an 'after' image URL (upload preferred)" },
         },
         { name: "url", type: "text", admin: { description: "Live site URL (optional)" } },
         {

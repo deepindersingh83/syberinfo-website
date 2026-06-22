@@ -19,7 +19,16 @@ export default async function PartnersCarousel() {
               key={i}
               className="flex items-center whitespace-nowrap rounded-2xl glass px-6 py-3 text-sm font-semibold text-foreground/80"
             >
-              {p.name}
+              {p.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={p.logo}
+                  alt={p.name}
+                  className="h-7 w-auto object-contain"
+                />
+              ) : (
+                p.name
+              )}
             </span>
           ))}
         </div>

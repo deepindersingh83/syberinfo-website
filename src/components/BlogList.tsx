@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import type { Post } from "@/lib/data";
 
@@ -64,8 +65,20 @@ export default function BlogList({ posts }: { posts: Post[] }) {
             <Link
               key={p.slug}
               href={`/blog/${p.slug}`}
-              className="group flex h-full flex-col rounded-3xl glass p-7 transition-all duration-300 hover:-translate-y-1.5 hover:border-white/20"
+              className="group flex h-full flex-col overflow-hidden rounded-3xl glass transition-all duration-300 hover:-translate-y-1.5 hover:border-white/20"
             >
+              {p.coverImage && (
+                <div className="relative aspect-[16/9] w-full overflow-hidden">
+                  <Image
+                    src={p.coverImage}
+                    alt={p.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+              )}
+              <div className="flex flex-1 flex-col p-7">
               <div className="flex items-center gap-2 text-xs text-muted">
                 {p.category && (
                   <span className="rounded-full bg-white/5 px-3 py-1 font-semibold text-gradient">
@@ -83,6 +96,7 @@ export default function BlogList({ posts }: { posts: Post[] }) {
                 <span className="font-semibold text-foreground/80 transition-transform group-hover:translate-x-1">
                   Read →
                 </span>
+              </div>
               </div>
             </Link>
           ))}
