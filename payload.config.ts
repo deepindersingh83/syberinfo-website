@@ -1,12 +1,54 @@
 import path from "path";
 import { fileURLToPath } from "url";
-import { buildConfig } from "payload";
+import { buildConfig, type Access } from "payload";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
 import sharp from "sharp";
 
 import { migrations } from "./src/migrations";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Fail fast rather than boot with a public, hardcoded signing secret. A missing
+// PAYLOAD_SECRET in production would let anyone forge auth cookies/JWTs, so we
+// refuse to start. In development we fall back to a clearly-insecure value.
+const PAYLOAD_SECRET = process.env.PAYLOAD_SECRET;
+if (!PAYLOAD_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error(
+    "PAYLOAD_SECRET is required in production. Generate one with " +
+      "`openssl rand -base64 32` and set it in the environment.",
+  );
+}
+
+/**
+ * Access-control helpers for the Billing collections.
+ *
+ * Staff (the `users` auth collection) are admins with full access. A logged-in
+ * customer (the `customers` auth collection) may only see rows that belong to
+ * them; everyone else sees nothing. Without these rules Payload's default
+ * ("any authenticated user") lets any logged-in customer read — and modify —
+ * every other customer's billing data through the auto-exposed REST/GraphQL
+ * API. The portal's own reads/writes use `overrideAccess: true` server-side, so
+ * these rules only lock down the raw API, not the portal.
+ */
+const isStaff = (user: { collection?: string } | null | undefined): boolean =>
+  user?.collection === "users";
+
+/** Staff only — creating/editing billing records, reading coupons/settings. */
+const staffOnly: Access = ({ req: { user } }) => isStaff(user);
+
+/** Staff see everything; a customer sees only records whose `customer` is them. */
+const ownedByCustomer: Access = ({ req: { user } }) => {
+  if (isStaff(user)) return true;
+  if (user?.collection === "customers") return { customer: { equals: user.id } };
+  return false;
+};
+
+/** The `customers` collection itself, keyed on the record's own id. */
+const ownCustomerRecord: Access = ({ req: { user } }) => {
+  if (isStaff(user)) return true;
+  if (user?.collection === "customers") return { id: { equals: user.id } };
+  return false;
+};
 
 const ACCENTS = [
   "from-cyan-glow to-violet-glow",
@@ -32,7 +74,7 @@ export default buildConfig({
       titleSuffix: "· SyberInfo Admin",
     },
   },
-  secret: process.env.PAYLOAD_SECRET || "CHANGE_ME_IN_PRODUCTION",
+  secret: PAYLOAD_SECRET || "dev-only-insecure-secret-change-me",
   typescript: {
     outputFile: path.resolve(dirname, "src/payload-types.ts"),
   },
@@ -559,6 +601,12 @@ export default buildConfig({
       slug: "customers",
       labels: { singular: "Customer", plural: "Customers" },
       auth: true,
+      access: {
+        read: ownCustomerRecord,
+        create: staffOnly,
+        update: ownCustomerRecord,
+        delete: staffOnly,
+      },
       admin: { useAsTitle: "email", group: "Billing", defaultColumns: ["email", "name", "company"] },
       fields: [
         { name: "name", type: "text", required: true },
@@ -576,6 +624,7 @@ export default buildConfig({
     {
       slug: "orders",
       labels: { singular: "Order", plural: "Orders" },
+      access: { read: ownedByCustomer, create: staffOnly, update: staffOnly, delete: staffOnly },
       admin: { useAsTitle: "id", group: "Billing", defaultColumns: ["customer", "total", "status", "createdAt"] },
       fields: [
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -601,6 +650,7 @@ export default buildConfig({
     {
       slug: "subscriptions",
       labels: { singular: "Service", plural: "Services (Subscriptions)" },
+      access: { read: ownedByCustomer, create: staffOnly, update: staffOnly, delete: staffOnly },
       admin: { useAsTitle: "label", group: "Billing", defaultColumns: ["label", "customer", "status", "nextDueDate"] },
       fields: [
         { name: "label", type: "text", required: true, admin: { description: "e.g. Web Hosting — example.com.au" } },
@@ -621,6 +671,7 @@ export default buildConfig({
     {
       slug: "invoices",
       labels: { singular: "Invoice", plural: "Invoices" },
+      access: { read: ownedByCustomer, create: staffOnly, update: staffOnly, delete: staffOnly },
       admin: { useAsTitle: "number", group: "Billing", defaultColumns: ["number", "customer", "total", "status", "dueDate"] },
       fields: [
         { name: "number", type: "text", required: true, unique: true },
@@ -650,6 +701,7 @@ export default buildConfig({
     {
       slug: "transactions",
       labels: { singular: "Transaction", plural: "Transactions" },
+      access: { read: ownedByCustomer, create: staffOnly, update: staffOnly, delete: staffOnly },
       admin: { useAsTitle: "reference", group: "Billing", defaultColumns: ["reference", "customer", "amount", "status"] },
       fields: [
         { name: "reference", type: "text" },
@@ -668,6 +720,7 @@ export default buildConfig({
     {
       slug: "client-domains",
       labels: { singular: "Domain", plural: "Domains" },
+      access: { read: ownedByCustomer, create: staffOnly, update: staffOnly, delete: staffOnly },
       admin: { useAsTitle: "domain", group: "Billing", defaultColumns: ["domain", "customer", "expiryDate", "status"] },
       fields: [
         { name: "domain", type: "text", required: true },
@@ -687,6 +740,9 @@ export default buildConfig({
     {
       slug: "tickets",
       labels: { singular: "Ticket", plural: "Support Tickets" },
+      // Portal create/reply go through /api/portal/tickets with overrideAccess
+      // and their own ownership checks, so the raw API stays staff-only.
+      access: { read: ownedByCustomer, create: staffOnly, update: staffOnly, delete: staffOnly },
       admin: { useAsTitle: "subject", group: "Billing", defaultColumns: ["subject", "customer", "status", "priority"] },
       fields: [
         { name: "subject", type: "text", required: true },
@@ -722,6 +778,9 @@ export default buildConfig({
     {
       slug: "coupons",
       labels: { singular: "Coupon", plural: "Coupons" },
+      // Discount codes are staff-managed and validated server-side at checkout;
+      // customers must not be able to enumerate them via the API.
+      access: { read: staffOnly, create: staffOnly, update: staffOnly, delete: staffOnly },
       admin: { useAsTitle: "code", group: "Billing", defaultColumns: ["code", "type", "value", "active"] },
       fields: [
         { name: "code", type: "text", required: true, unique: true },
@@ -771,6 +830,7 @@ export default buildConfig({
     {
       slug: "billing-settings",
       label: "Billing Settings",
+      access: { read: staffOnly, update: staffOnly },
       admin: { group: "Billing" },
       fields: [
         { name: "companyLegalName", type: "text", defaultValue: "SyberInfo" },
