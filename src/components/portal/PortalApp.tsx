@@ -16,6 +16,8 @@ type Invoice = { id: string; number: string; total: number; status: string; dueD
 type TicketMsg = { author: string; message: string };
 type Ticket = { id: string; subject: string; department: string; status: string; priority: string; updatedAt: string; messages: TicketMsg[] };
 type Domain = { id: string; domain: string; status: string; expiryDate: string; autoRenew: boolean };
+type SwPlan = { name: string; price: number; unit: string; feat: string };
+type SwProduct = { id: string; name: string; brand: string; category: string; letter: string; color: string; tagline: string; plans: SwPlan[]; addons: { name: string; price: number; desc: string }[] };
 type Me = {
   customer: Customer;
   subscriptions: Subscription[];
@@ -65,6 +67,7 @@ const NAV = [
   { key: "invoices", label: "Invoices", icon: "$" },
   { key: "tickets", label: "Support", icon: "✉" },
   { key: "plans", label: "Browse plans", icon: "◆" },
+  { key: "software", label: "Software & licences", icon: "▧" },
   { key: "knowledge", label: "Knowledge base", icon: "?" },
   { key: "settings", label: "Settings", icon: "⚙" },
 ] as const;
@@ -86,6 +89,9 @@ export default function PortalApp() {
   const [toast, setToast] = useState("");
   const [tkSel, setTkSel] = useState<string | null>(null);
   const [kbSel, setKbSel] = useState<string | null>(null);
+  const [catalog, setCatalog] = useState<SwProduct[] | null>(null);
+  const [swSel, setSwSel] = useState<string | null>(null);
+  const [swCat, setSwCat] = useState("All");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flash = useCallback((msg: string) => {
@@ -117,6 +123,15 @@ export default function PortalApp() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadMe().then((ok) => setView(ok ? "dash" : "login"));
   }, [loadMe]);
+
+  useEffect(() => {
+    if (view !== "dash" || catalog) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    api("/api/portal/software")
+      .then((r) => r.json())
+      .then((d) => setCatalog(d.products || []))
+      .catch(() => setCatalog([]));
+  }, [view, catalog]);
 
   async function onLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -363,6 +378,16 @@ export default function PortalApp() {
           {tab === "invoices" && <Invoices invoices={me.invoices} onPay={payInvoice} busy={busy} />}
           {tab === "tickets" && <Tickets tickets={me.tickets} sel={tkSel} setSel={setTkSel} onCreate={submitTicket} onReply={replyTicket} custName={customer.name || customer.email} />}
           {tab === "plans" && <Plans onRequest={(name) => submitTicket(`Plan change request: ${name}`, "sales", `I'd like to move to the ${name} plan.`)} />}
+          {tab === "software" && (
+            <Software
+              catalog={catalog}
+              sel={swSel}
+              setSel={setSwSel}
+              cat={swCat}
+              setCat={setSwCat}
+              onRequest={(label) => submitTicket(`Licence request: ${label}`, "sales", `Please quote and provision: ${label}.`)}
+            />
+          )}
           {tab === "knowledge" && <Knowledge sel={kbSel} setSel={setKbSel} />}
           {tab === "settings" && <Settings customer={customer} onReset={() => api("/api/customers/forgot-password", { method: "POST", body: JSON.stringify({ email: customer.email }) }).then(() => flash("Password reset link sent to your email."))} />}
         </main>
@@ -583,6 +608,107 @@ function Tickets({ tickets, sel, setSel, onCreate, onReply, custName }: {
             </button>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function Software({ catalog, sel, setSel, cat, setCat, onRequest }: {
+  catalog: SwProduct[] | null;
+  sel: string | null; setSel: (s: string | null) => void;
+  cat: string; setCat: (c: string) => void;
+  onRequest: (label: string) => void;
+}) {
+  const money = (n: number) => "$" + (Number.isInteger(n) ? n : n.toFixed(2));
+  const [qty, setQty] = useState<Record<string, number>>({});
+  const step = (k: string, d: number) => setQty((q) => ({ ...q, [k]: Math.max(1, (q[k] || 1) + d) }));
+
+  if (catalog === null) {
+    return <div className={`${card} px-6 py-12 text-center text-[14px] text-muted-2`}>Loading catalogue…</div>;
+  }
+
+  const product = sel ? catalog.find((w) => w.id === sel) : null;
+  if (product) {
+    return (
+      <div className="mx-auto max-w-[900px]">
+        <button onClick={() => setSel(null)} className="mb-5 text-sm text-muted hover:text-foreground">← All software</button>
+        <div className="flex items-center gap-4">
+          <span className="grid h-14 w-14 place-items-center rounded-2xl font-display text-2xl font-bold text-white" style={{ background: product.color }}>{product.letter}</span>
+          <div>
+            <h2 className="font-display text-[22px] font-bold tracking-[-.02em]">{product.name}</h2>
+            <p className="text-[13px] text-muted-2">{product.brand} · {product.category} — {product.tagline}</p>
+          </div>
+        </div>
+        <h3 className="mb-3 mt-7 font-display text-lg font-semibold">Licence plans</h3>
+        <div className="flex flex-col gap-3">
+          {product.plans.map((p) => {
+            const key = `${product.id}:${p.name}`;
+            const q = qty[key] || 1;
+            return (
+              <div key={p.name} className={`${card} flex flex-wrap items-center gap-4 p-5`}>
+                <div className="min-w-[180px] flex-1">
+                  <div className="text-[15px] font-semibold">{p.name}</div>
+                  <div className="text-[12.5px] text-muted-3">{p.feat}</div>
+                </div>
+                <div className="text-right"><div className="font-display text-lg font-bold">{money(p.price)}</div><div className="text-[11px] text-muted-3">{p.unit}</div></div>
+                <div className="flex items-center gap-1 rounded-[10px] border border-white/[.12] px-1">
+                  <button onClick={() => step(key, -1)} className="grid h-8 w-8 place-items-center text-muted hover:text-foreground">−</button>
+                  <span className="w-6 text-center text-[14px]">{q}</span>
+                  <button onClick={() => step(key, 1)} className="grid h-8 w-8 place-items-center text-muted hover:text-foreground">+</button>
+                </div>
+                <button onClick={() => onRequest(`${product.name} — ${p.name} × ${q} (≈ ${money(p.price * q)} ${p.unit})`)} className="flex-none rounded-[10px] bg-indigo px-4 py-2.5 text-[13px] font-semibold text-white">Request</button>
+              </div>
+            );
+          })}
+        </div>
+        {product.addons.length > 0 && (
+          <>
+            <h3 className="mb-3 mt-7 font-display text-lg font-semibold">Add-ons</h3>
+            <div className="flex flex-col gap-3">
+              {product.addons.map((a) => (
+                <div key={a.name} className={`${card} flex items-center gap-4 p-5`}>
+                  <div className="flex-1"><div className="text-[15px] font-semibold">{a.name}</div><div className="text-[12.5px] text-muted-3">{a.desc}</div></div>
+                  <div className="font-display text-lg font-bold">{money(a.price)}<span className="text-[11px] text-muted-3"> /mo</span></div>
+                  <button onClick={() => onRequest(`${product.name} add-on — ${a.name}`)} className="flex-none rounded-[10px] bg-indigo px-4 py-2.5 text-[13px] font-semibold text-white">Request</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        <p className="mt-5 text-[13px] text-muted-3">Requesting opens a ticket with our team — we&rsquo;ll confirm pricing, provision the licences and add them to your next invoice.</p>
+      </div>
+    );
+  }
+
+  const cats = ["All", ...Array.from(new Set(catalog.map((w) => w.category)))];
+  const list = catalog.filter((w) => cat === "All" || w.category === cat);
+  return (
+    <div className="mx-auto max-w-[1100px]">
+      <h2 className="mb-4 font-display text-[22px] font-bold tracking-[-.02em]">Software &amp; licences</h2>
+      {catalog.length === 0 ? (
+        <div className={`${card} px-6 py-12 text-center text-[14px] text-muted-2`}>No software in the catalogue yet.</div>
+      ) : (
+        <>
+          <div className="mb-6 flex flex-wrap gap-2">
+            {cats.map((c) => (
+              <button key={c} onClick={() => setCat(c)} className={`rounded-full border px-3.5 py-1.5 text-[13px] transition-colors ${c === cat ? "border-indigo bg-indigo/[.16] text-foreground" : "border-white/[.12] text-muted"}`}>{c}</button>
+            ))}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {list.map((w) => (
+              <button key={w.id} onClick={() => setSel(w.id)} className={`${card} p-5 text-left transition-colors hover:border-indigo/40`}>
+                <div className="flex items-center gap-3">
+                  <span className="grid h-11 w-11 place-items-center rounded-xl font-display text-lg font-bold text-white" style={{ background: w.color }}>{w.letter}</span>
+                  <div><div className="text-[15px] font-semibold">{w.name}</div><div className="text-[12px] text-muted-3">{w.category}</div></div>
+                </div>
+                <p className="mt-3 text-[13px] leading-[1.5] text-muted-2">{w.tagline}</p>
+                {w.plans.length > 0 && (
+                  <div className="mt-3 font-mono text-[12px] text-lime">from ${Math.min(...w.plans.map((p) => p.price))} /user</div>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

@@ -347,6 +347,55 @@ export default buildConfig({
       ],
     },
     {
+      // Software & cloud licence catalogue shown in the client portal.
+      slug: "software",
+      labels: { singular: "Software product", plural: "Software & Licences" },
+      admin: {
+        useAsTitle: "name",
+        group: "Catalog",
+        defaultColumns: ["name", "brand", "category", "active"],
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      fields: [
+        { name: "name", type: "text", required: true, admin: { description: "e.g. Microsoft 365" } },
+        { name: "brand", type: "text", admin: { description: "Vendor, e.g. Microsoft" } },
+        {
+          name: "category",
+          type: "select",
+          defaultValue: "Productivity",
+          options: ["Productivity", "Creative", "Communication", "Dev Tools", "Storage", "Security", "Cloud", "Other"].map(
+            (v) => ({ label: v, value: v }),
+          ),
+        },
+        { name: "letter", type: "text", admin: { description: "1–2 char badge, e.g. M" } },
+        { name: "color", type: "text", admin: { description: "Badge colour hex, e.g. #0078D4" } },
+        { name: "tagline", type: "textarea" },
+        { name: "active", type: "checkbox", defaultValue: true },
+        { name: "order", type: "number", defaultValue: 0, admin: { description: "Lower shows first" } },
+        {
+          name: "plans",
+          type: "array",
+          label: "Licence plans",
+          fields: [
+            { name: "name", type: "text", required: true, admin: { description: "e.g. Business Standard" } },
+            { name: "price", type: "number", admin: { description: "AUD ex-GST" } },
+            { name: "unit", type: "text", defaultValue: "per user / month" },
+            { name: "feature", type: "text", admin: { description: "Short inclusions line" } },
+          ],
+        },
+        {
+          name: "addons",
+          type: "array",
+          label: "Add-ons",
+          fields: [
+            { name: "name", type: "text", required: true },
+            { name: "price", type: "number", admin: { description: "AUD ex-GST / month" } },
+            { name: "desc", type: "text" },
+          ],
+        },
+      ],
+    },
+    {
       slug: "testimonials",
       admin: {
         useAsTitle: "name",
@@ -990,6 +1039,7 @@ export default buildConfig({
       projects: seedProjects,
       stats: seedStats,
     } = await import("@/lib/it-data");
+    const { software: seedSoftware } = await import("@/lib/portal-data");
 
     const { totalDocs: serviceCount } = await payload.count({
       collection: "services",
@@ -1072,6 +1122,30 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedTestimonials.length} testimonials`);
+    }
+
+    const { totalDocs: softwareCount } = await payload.count({ collection: "software" });
+    if (softwareCount === 0) {
+      for (let i = 0; i < seedSoftware.length; i++) {
+        const w = seedSoftware[i];
+        await payload.create({
+          collection: "software",
+          data: {
+            name: w.name,
+            brand: w.brand,
+            category: w.category as
+              | "Productivity" | "Creative" | "Communication" | "Dev Tools" | "Storage" | "Security" | "Cloud" | "Other",
+            letter: w.letter,
+            color: w.color,
+            tagline: w.tagline,
+            active: true,
+            order: i,
+            plans: w.plans.map((p) => ({ name: p.name, price: p.priceNum, unit: "per user / month", feature: p.feat })),
+            addons: (w.addons || []).map((a) => ({ name: a.name, price: a.priceNum, desc: a.desc })),
+          },
+        });
+      }
+      payload.logger.info(`Seeded ${seedSoftware.length} software products`);
     }
 
     const { totalDocs: postCount } = await payload.count({ collection: "posts" });
