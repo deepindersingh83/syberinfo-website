@@ -1,8 +1,9 @@
 # SyberInfo Website
 
-Marketing & lead-generation website for **SyberInfo** — an Australian digital
-agency offering web development, design, SEO, SMO and digital marketing, plus
-domains, hosting and Google/Microsoft Workspace as a reseller.
+Marketing site, client portal & billing admin for **SyberInfo** — an Australian
+**managed IT, cloud & cybersecurity** provider. Managed IT support, cloud &
+infrastructure, cybersecurity, backup & recovery, networks & VoIP, and IT
+strategy / vCIO — with an in-app client portal and a Payload CMS admin.
 
 ## Tech stack
 
@@ -13,8 +14,8 @@ domains, hosting and Google/Microsoft Workspace as a reseller.
 | Backend      | **Next.js Route Handlers** (`/api/contact`)       | Lead capture without a separate server |
 | CMS          | **Payload 3** (installs into Next.js) + **SQLite** | Manage Services/Products/Testimonials at `/admin`; no DB server needed (CloudPanel-friendly) |
 | Email        | **Resend** (optional, via env)                    | Transactional contact emails |
-| Fonts        | Sora + JetBrains Mono (`next/font`)               | Self-hosted, no layout shift |
-| Database     | **MySQL / MariaDB** (when needed) + Prisma        | Native to CloudPanel; Prisma supports it fully |
+| Fonts        | Bricolage Grotesque + DM Sans + JetBrains Mono (`next/font`) | Self-hosted, no layout shift |
+| Database     | **SQLite** (via Payload's SQLite adapter)         | Zero DB server to run; a single file — CloudPanel-friendly |
 | Deploy       | **CloudPanel** Node.js site on your VPS           | Matches your existing hosting/control panel |
 
 > **Hosting note:** SyberInfo runs **CloudPanel.io**, which provides MySQL/MariaDB

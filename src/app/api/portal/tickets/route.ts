@@ -43,5 +43,20 @@ export async function POST(req: Request) {
   });
 
   logger.info("portal: ticket created", { ticket: ticket.id, customer: customer.id });
+
+  // Notify the support desk (no-op if email isn't configured).
+  const notify = process.env.CONTACT_TO || "hello@syberinfo.com.au";
+  try {
+    await payload.sendEmail({
+      to: notify,
+      subject: `New ticket #${ticket.id}: ${subject}`,
+      text: `A new ${department} ticket was opened by ${customer.name || customer.email}.\n\n${message}`,
+    });
+  } catch (err) {
+    logger.warn("portal: ticket notification email failed", {
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   return json({ id: ticket.id });
 }

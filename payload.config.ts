@@ -1,6 +1,6 @@
 import path from "path";
 import { fileURLToPath } from "url";
-import { buildConfig, type Access } from "payload";
+import { buildConfig, type Access, type EmailAdapter } from "payload";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
 import sharp from "sharp";
 
@@ -39,6 +39,47 @@ const ownerAccess =
     if (u.collection === "customers") return { [field]: { equals: u.id } };
     return false;
   };
+
+/**
+ * Email transport. Uses the Resend HTTP API directly (no extra dependency) so
+ * Payload can send password-reset and notification emails. When RESEND_API_KEY
+ * is unset, `email` is left undefined and Payload logs messages to the console.
+ */
+const FROM_ADDRESS = process.env.CONTACT_FROM_ADDRESS || "noreply@syberinfo.com.au";
+const FROM_NAME = process.env.CONTACT_FROM_NAME || "SyberInfo";
+
+const resendAdapter: EmailAdapter = () => ({
+  name: "resend-http",
+  defaultFromAddress: FROM_ADDRESS,
+  defaultFromName: FROM_NAME,
+  async sendEmail(message) {
+    const toList = Array.isArray(message.to) ? message.to : [message.to];
+    const from =
+      typeof message.from === "string" && message.from
+        ? message.from
+        : `${FROM_NAME} <${FROM_ADDRESS}>`;
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: toList,
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(`Resend send failed: ${res.status} ${await res.text()}`);
+    }
+    return res.json();
+  },
+});
+
+const email = process.env.RESEND_API_KEY ? resendAdapter : undefined;
 
 // Fail fast in production at runtime if the signing secret was never set —
 // otherwise JWTs are signed with a publicly-known key and sessions can be
@@ -87,6 +128,7 @@ export default buildConfig({
   cors: trustedOrigins,
   csrf: trustedOrigins,
   secret: process.env.PAYLOAD_SECRET || "CHANGE_ME_IN_PRODUCTION",
+  email,
   typescript: {
     outputFile: path.resolve(dirname, "src/payload-types.ts"),
   },

@@ -43,6 +43,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  async redirects() {
+    // The client portal is now a single-page app at /portal. Redirect the
+    // legacy server-rendered sub-pages there so there are no dead-ends
+    // (reset-password is exempt — it completes the password-reset email flow).
+    return [
+      {
+        source: "/portal/:path((?!reset-password).+)",
+        destination: "/portal",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default withPayload(nextConfig);

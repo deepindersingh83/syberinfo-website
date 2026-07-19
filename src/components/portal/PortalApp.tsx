@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   authStats,
   baseServices,
@@ -62,10 +62,14 @@ export default function PortalApp() {
     } catch {}
   }, []);
 
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+  }, []);
   function flash(msg: string) {
     setToast(msg);
-    window.clearTimeout((flash as unknown as { _t?: number })._t);
-    (flash as unknown as { _t?: number })._t = window.setTimeout(() => setToast(""), 2800);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2800);
   }
 
   function startSession(u: User) {
