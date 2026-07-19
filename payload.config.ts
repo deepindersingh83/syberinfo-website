@@ -132,6 +132,9 @@ export default buildConfig({
   admin: {
     user: "users",
     theme: "dark",
+    components: {
+      beforeDashboard: ["@/components/admin/DashboardStats#default"],
+    },
     meta: {
       titleSuffix: "· SyberInfo Admin",
     },
@@ -741,6 +744,21 @@ export default buildConfig({
       labels: { singular: "Service", plural: "Services (Subscriptions)" },
       admin: { useAsTitle: "label", group: "Billing", defaultColumns: ["label", "customer", "status", "nextDueDate"] },
       access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          ({ data, operation }) => {
+            // Default the next due date from the billing cycle on create.
+            if (operation === "create" && !data.nextDueDate) {
+              const d = new Date();
+              const cycle = String(data.billingCycle || "").toLowerCase();
+              if (cycle.includes("year") || cycle.includes("annual")) d.setFullYear(d.getFullYear() + 1);
+              else d.setMonth(d.getMonth() + 1);
+              data.nextDueDate = d.toISOString();
+            }
+            return data;
+          },
+        ],
+      },
       fields: [
         { name: "label", type: "text", required: true, admin: { description: "e.g. Web Hosting — example.com.au" } },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -762,6 +780,29 @@ export default buildConfig({
       labels: { singular: "Invoice", plural: "Invoices" },
       admin: { useAsTitle: "number", group: "Billing", defaultColumns: ["number", "customer", "total", "status", "dueDate"] },
       access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          async ({ data, operation, req }) => {
+            // Compute subtotal / GST / total from line items automatically.
+            if (Array.isArray(data.items)) {
+              const subtotal = (data.items as { amount?: number }[]).reduce(
+                (s, it) => s + (Number(it.amount) || 0),
+                0,
+              );
+              data.subtotal = Math.round(subtotal * 100) / 100;
+              data.tax = Math.round(subtotal * 0.1 * 100) / 100; // 10% GST
+              data.total = Math.round((subtotal + data.tax) * 100) / 100;
+            }
+            // Auto-generate a sequential invoice number on create.
+            if (operation === "create" && !data.number) {
+              const year = new Date().getFullYear();
+              const { totalDocs } = await req.payload.count({ collection: "invoices" });
+              data.number = `INV-${year}-${String(totalDocs + 1).padStart(4, "0")}`;
+            }
+            return data;
+          },
+        ],
+      },
       fields: [
         { name: "number", type: "text", required: true, unique: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
