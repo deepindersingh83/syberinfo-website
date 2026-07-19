@@ -78,6 +78,7 @@ const trustedOrigins = [
 export default buildConfig({
   admin: {
     user: "users",
+    theme: "dark",
     meta: {
       titleSuffix: "· SyberInfo Admin",
     },

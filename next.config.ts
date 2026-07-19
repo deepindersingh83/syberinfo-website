@@ -1,5 +1,9 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import type { NextConfig } from "next";
 import { withPayload } from "@payloadcms/next/withPayload";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * If you must serve the site under a sub-path (e.g. https://syberinfo.com/app),
@@ -29,6 +33,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   basePath,
+  // Pin the workspace root so a stray nested lockfile in node_modules can't
+  // make Turbopack misdetect the project root.
+  turbopack: { root: projectRoot },
+  outputFileTracingRoot: projectRoot,
   // Produces a self-contained server build (.next/standalone) that's ideal for
   // running behind CloudPanel's nginx reverse proxy with PM2. See DEPLOY.md.
   output: "standalone",
