@@ -3,41 +3,46 @@ import type { ZodType } from "zod";
 import { logger } from "@/lib/logger";
 
 /**
- * Allowed origins for state-changing requests. Add your production domain(s)
- * via SITE_URL; localhost is always allowed in development.
+ * Extra allowed origin hosts (beyond the request's own host). Anyone on the
+ * real site is already allowed via the host match in sameOrigin(); this just
+ * lets you permit additional trusted domains via SITE_URL / EXTRA_ORIGINS.
  */
-function allowedHosts(): string[] {
+function extraAllowedHosts(): string[] {
   const hosts = new Set<string>();
-  const site = process.env.SITE_URL;
-  if (site) {
+  const add = (v?: string) => {
+    if (!v) return;
     try {
-      hosts.add(new URL(site).host);
+      hosts.add(new URL(v).host.toLowerCase());
     } catch {
-      /* ignore malformed SITE_URL */
+      hosts.add(v.trim().toLowerCase()); // allow a bare host too
     }
-  }
-  hosts.add("syberinfo.com.au");
-  hosts.add("www.syberinfo.com.au");
+  };
+  add(process.env.SITE_URL);
+  // Comma-separated list of additional origins (schemes optional).
+  (process.env.EXTRA_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean).forEach(add);
   if (process.env.NODE_ENV !== "production") hosts.add("localhost:3000");
   return [...hosts];
 }
 
 /**
- * Reject cross-site POSTs by comparing the request's Origin/Referer host to the
- * allowlist. Cheap CSRF defence for cookie-authenticated route handlers.
+ * CSRF defence for cookie-authenticated routes. A request is same-origin when
+ * its Origin/Referer host matches the host the request was actually served on
+ * — so it works on ANY domain you deploy to (and from users anywhere in the
+ * world), while still rejecting genuine cross-site (attacker-domain) requests.
  */
 export function sameOrigin(req: Request): boolean {
-  const origin = req.headers.get("origin");
-  const referer = req.headers.get("referer");
-  const source = origin || referer;
+  const source = req.headers.get("origin") || req.headers.get("referer");
   if (!source) return false; // no Origin on a cross-site fetch → reject
   let host: string;
   try {
-    host = new URL(source).host;
+    host = new URL(source).host.toLowerCase();
   } catch {
     return false;
   }
-  return allowedHosts().includes(host);
+  // The public host this request came in on (nginx sets x-forwarded-host/host).
+  const serverHost = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "").toLowerCase();
+  if (serverHost && host === serverHost) return true;
+  return extraAllowedHosts().includes(host);
 }
 
 /** JSON response shorthand. */
