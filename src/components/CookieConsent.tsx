@@ -52,30 +52,29 @@ export default function CookieConsent() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-2xl rounded-2xl glass p-5 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <p className="flex-1 text-sm text-muted">
-          We use cookies to analyse traffic and improve your experience. See our{" "}
-          <a
-            href="/privacy"
-            className="font-semibold text-foreground underline underline-offset-2"
-          >
+    <div className="glass fixed inset-x-0 bottom-0 z-[70] border-t border-white/10 bg-ink-900/[.96]">
+      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-5 px-5 py-[18px] sm:px-10">
+        <p className="m-0 max-w-[68ch] text-[13.5px] leading-relaxed text-muted">
+          We use cookies to keep the site running smoothly and understand how
+          it&rsquo;s used. You can accept all cookies or stick to the essentials
+          only. See our{" "}
+          <a href="/privacy" className="text-lime no-underline">
             Privacy Policy
           </a>
-          . You can accept or decline analytics cookies.
+          .
         </p>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 gap-3">
           <button
             onClick={() => decide(false)}
-            className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/10"
+            className="rounded-full border border-white/[.18] bg-transparent px-5 py-[11px] text-[13.5px] font-semibold text-foreground"
           >
-            Decline
+            Essentials only
           </button>
           <button
             onClick={() => decide(true)}
-            className="rounded-full bg-gradient-to-r from-cyan-glow to-violet-glow px-4 py-2 text-sm font-semibold text-ink-950 transition-transform hover:scale-[1.03]"
+            className="rounded-full bg-indigo px-5 py-[11px] text-[13.5px] font-semibold text-white"
           >
-            Accept
+            Accept all
           </button>
         </div>
       </div>

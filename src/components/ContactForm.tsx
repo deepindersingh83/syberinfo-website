@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { services } from "@/lib/data";
+import { services } from "@/lib/it-data";
 import Turnstile from "@/components/Turnstile";
 
 type Status = "idle" | "sending" | "sent" | "error";

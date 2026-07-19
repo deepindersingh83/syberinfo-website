@@ -12,6 +12,9 @@ export type ServicePlan = {
   ctaHref?: string;
 };
 
+export type ServiceKeyFeature = { title: string; body: string };
+export type ServiceMetric = { k: string; v: string };
+
 export type Service = {
   slug: string;
   title: string;
@@ -25,6 +28,13 @@ export type Service = {
   faqs: ServiceFaq[];
   pricing?: ServicePlan[]; // optional pricing table on the service page
   accent: string; // tailwind gradient stops
+  // Optional design fields used by the managed-IT layout
+  accentHex?: string; // e.g. "#5E5BFF"
+  tintHex?: string; // e.g. "rgba(94,91,255,.14)"
+  short?: string; // short label used in tab strips
+  lead?: string; // lead paragraph on the detail hero
+  keyFeatures?: ServiceKeyFeature[]; // titled feature blocks
+  metrics?: ServiceMetric[]; // headline stats (k/v)
 };
 
 export const services: Service[] = [

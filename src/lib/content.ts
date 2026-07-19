@@ -1,16 +1,10 @@
 import { getPayload } from "payload";
 import config from "@payload-config";
 import {
-  services as fallbackServices,
   products as fallbackProducts,
-  testimonials as fallbackTestimonials,
-  posts as fallbackPosts,
   plans as fallbackPlans,
-  partners as fallbackPartners,
   generalFaqs as fallbackFaqs,
   helpArticles as fallbackHelp,
-  projects as fallbackProjects,
-  stats as fallbackStats,
   steps as fallbackSteps,
   type Service,
   type Product,
@@ -21,6 +15,16 @@ import {
   type HelpArticle,
   type Project,
 } from "./data";
+// Managed-IT content is the source of truth for these collections; the CMS
+// overrides them once seeded, otherwise these are served.
+import {
+  services as fallbackServices,
+  testimonials as fallbackTestimonials,
+  posts as fallbackPosts,
+  partners as fallbackPartners,
+  projects as fallbackProjects,
+  stats as fallbackStats,
+} from "./it-data";
 
 type Testimonial = { quote: string; name: string; role: string };
 type Stat = { value: string; label: string };

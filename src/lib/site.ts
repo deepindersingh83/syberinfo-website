@@ -4,58 +4,89 @@
  */
 export const site = {
   name: "SyberInfo",
-  legalName: "SyberInfo",
-  domain: "syberinfo.com",
-  url: "https://syberinfo.com",
-  tagline: "Web. Design. Growth.",
+  legalName: "SyberInfo Pty Ltd",
+  domain: "syberinfo.com.au",
+  url: "https://syberinfo.com.au",
+  tagline: "IT that quietly runs while you build.",
   description:
-    "SyberInfo builds high-performing websites and digital marketing that grow Australian businesses — web development, design, SEO, SMO, plus domains, hosting and Google & Microsoft Workspace as a trusted reseller.",
-  email: "admin@syberinfo.com.au",
-  phone: "+61 0000 000 000",
+    "SyberInfo delivers managed IT, cloud and cybersecurity for growing Australian businesses. We handle the infrastructure, the threats and the 2am alerts — so your team never has to think about any of it.",
+  email: "hello@syberinfo.com.au",
+  phone: "1300 000 000",
+  phoneIntl: "+61300000000",
   // Australian business details (edit these). ABN shown in footer + schema.
   abn: "00 000 000 000",
   australianOwned: true,
   dataLocation: "Australia",
+  address: "Level 8, 120 Collins St, Melbourne",
+  founded: "2015",
   // WhatsApp number in international format, digits only (no + or spaces).
   // Leave empty to hide the floating WhatsApp button. e.g. "61400000000"
   whatsapp: "",
-  // Public status/uptime page (e.g. UptimeRobot/BetterStack). Shown in footer.
-  statusUrl: "https://status.syberinfo.com",
-  location: "Australia",
-  // Existing billing / client portal (WHMCS-style) lives on this subdomain
-  storeUrl: "https://hosting.syberinfo.com.au",
+  // Public status/uptime page. This project ships its own /status page.
+  statusUrl: "/status",
+  location: "Melbourne, Australia",
+  // Client portal ships in-app at /portal
+  storeUrl: "/portal",
   social: {
-    facebook: "https://facebook.com/syberinfo",
-    instagram: "https://instagram.com/syberinfo",
     linkedin: "https://linkedin.com/company/syberinfo",
     twitter: "https://twitter.com/syberinfo",
+    github: "https://github.com/syberinfo",
   },
 } as const;
 
 export const nav = [
   { label: "Services", href: "/services" },
-  { label: "Products", href: "/products" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Work", href: "/work" },
-  { label: "Blog", href: "/blog" },
+  { label: "Case studies", href: "/work" },
+  { label: "Insights", href: "/blog" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ] as const;
 
 // Secondary links surfaced in the footer.
 export const legalNav = [
-  { label: "Privacy Policy", href: "/privacy" },
-  { label: "Terms of Service", href: "/terms" },
-  { label: "Acceptable Use", href: "/acceptable-use" },
-  { label: "Refund Policy", href: "/refund-policy" },
+  { label: "Privacy", href: "/privacy" },
+  { label: "Terms", href: "/terms" },
 ] as const;
 
-/** Quick links into the existing hosting/store platform. */
+/** Footer link columns. */
+export const footerCols = [
+  {
+    head: "SERVICES",
+    links: [
+      { label: "Managed IT", href: "/services/managed" },
+      { label: "Cloud & Infrastructure", href: "/services/cloud" },
+      { label: "Cybersecurity", href: "/services/security" },
+      { label: "Backup & Recovery", href: "/services/backup" },
+    ],
+  },
+  {
+    head: "COMPANY",
+    links: [
+      { label: "About us", href: "/about" },
+      { label: "Case studies", href: "/work" },
+      { label: "Careers", href: "/careers" },
+      { label: "Insights", href: "/blog" },
+    ],
+  },
+  {
+    head: "GET IN TOUCH",
+    links: [
+      { label: "hello@syberinfo.com.au", href: "mailto:hello@syberinfo.com.au" },
+      { label: "1300 000 000", href: "tel:+61300000000" },
+      { label: "Contact us", href: "/contact" },
+      { label: "Client portal", href: "/portal" },
+    ],
+  },
+] as const;
+
+/** Quick links (client portal now lives in-app). */
 export const store = {
-  domains: `${site.storeUrl}/cart.php?a=add&domain=register`,
-  hosting: `${site.storeUrl}/index.php?rp=/store/web-hosting`,
-  linux: `${site.storeUrl}/index.php?rp=/store/linux-hosting`,
-  google: `${site.storeUrl}/index.php?rp=/store/google-workspace`,
-  microsoft: `${site.storeUrl}/index.php?rp=/store/microsoft-365`,
-  login: site.storeUrl,
+  login: "/portal",
+  book: "/book",
+  // Product order links now route into the in-app portal software marketplace.
+  domains: "/portal",
+  hosting: "/portal",
+  linux: "/portal",
+  google: "/portal",
+  microsoft: "/portal",
 } as const;

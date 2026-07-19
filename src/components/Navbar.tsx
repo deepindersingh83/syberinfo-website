@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { nav, site, store } from "@/lib/site";
+import { nav, store } from "@/lib/site";
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -14,112 +13,87 @@ export default function Navbar() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    setOpen(false);
+  }, [pathname]);
 
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "glass border-b border-white/10 py-3"
-          : "border-b border-transparent py-5"
-      }`}
-    >
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-5">
-        <Link href="/" className="group flex items-center gap-2.5">
-          <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-glow to-violet-glow font-mono text-sm font-black text-ink-950 shadow-[0_0_24px_-4px_var(--color-cyan-glow)]">
+    <header className="glass fixed inset-x-0 top-9 z-50 border-b border-white/[.06]">
+      <nav className="mx-auto flex max-w-[1240px] items-center justify-between px-5 py-4 sm:px-10">
+        <Link href="/" className="flex items-center gap-2.5 text-foreground">
+          <span className="grid h-[30px] w-[30px] place-items-center rounded-lg bg-indigo font-display text-[17px] font-extrabold text-white">
             S
           </span>
-          <span className="text-lg font-bold tracking-tight">
-            Syber<span className="text-gradient">Info</span>
+          <span className="font-display text-[19px] font-bold tracking-[-.02em]">
+            SyberInfo
           </span>
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-8 md:flex">
+        <div className="hidden items-center gap-8 lg:flex">
           {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`text-sm font-medium transition-colors hover:text-foreground ${
+              className={`text-[14.5px] font-medium transition-colors hover:text-foreground ${
                 isActive(item.href) ? "text-foreground" : "text-muted"
               }`}
             >
               {item.label}
             </Link>
           ))}
-        </div>
-
-        <div className="hidden items-center gap-3 md:flex">
-          <a
-            href={store.login}
-            className="text-sm font-medium text-muted transition-colors hover:text-foreground"
-          >
-            Client Login
-          </a>
           <Link
-            href="/contact"
-            className="rounded-full bg-gradient-to-r from-cyan-glow to-violet-glow px-5 py-2.5 text-sm font-semibold text-ink-950 shadow-[0_0_24px_-6px_var(--color-violet-glow)] transition-transform hover:scale-[1.03]"
+            href={store.login}
+            className="text-[14.5px] font-medium text-muted transition-colors hover:text-foreground"
           >
-            Get a Quote
+            Client login
+          </Link>
+          <Link
+            href={store.login}
+            className="rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-ink-950 transition-transform hover:-translate-y-0.5"
+          >
+            Client portal →
           </Link>
         </div>
 
         {/* Mobile toggle */}
         <button
           aria-label="Toggle menu"
+          aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="grid h-10 w-10 place-items-center rounded-lg glass md:hidden"
+          className="glass grid h-10 w-10 place-items-center rounded-lg lg:hidden"
         >
           <div className="space-y-1.5">
-            <span
-              className={`block h-0.5 w-5 bg-foreground transition-transform ${
-                open ? "translate-y-2 rotate-45" : ""
-              }`}
-            />
-            <span
-              className={`block h-0.5 w-5 bg-foreground transition-opacity ${
-                open ? "opacity-0" : ""
-              }`}
-            />
-            <span
-              className={`block h-0.5 w-5 bg-foreground transition-transform ${
-                open ? "-translate-y-2 -rotate-45" : ""
-              }`}
-            />
+            <span className={`block h-0.5 w-5 bg-foreground transition-transform ${open ? "translate-y-2 rotate-45" : ""}`} />
+            <span className={`block h-0.5 w-5 bg-foreground transition-opacity ${open ? "opacity-0" : ""}`} />
+            <span className={`block h-0.5 w-5 bg-foreground transition-transform ${open ? "-translate-y-2 -rotate-45" : ""}`} />
           </div>
         </button>
       </nav>
 
       {/* Mobile menu */}
       {open && (
-        <div className="mx-4 mt-3 rounded-2xl glass p-5 md:hidden">
+        <div className="mx-4 mb-3 rounded-2xl border border-white/[.08] bg-ink-900/95 p-5 lg:hidden">
           <div className="flex flex-col gap-1">
             {nav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setOpen(false)}
                 className="rounded-lg px-3 py-3 text-base font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground"
               >
                 {item.label}
               </Link>
             ))}
-            <a
+            <Link
               href={store.login}
               className="rounded-lg px-3 py-3 text-base font-medium text-muted hover:text-foreground"
             >
-              Client Login
-            </a>
+              Client login
+            </Link>
             <Link
-              href="/contact"
-              onClick={() => setOpen(false)}
-              className="mt-2 rounded-full bg-gradient-to-r from-cyan-glow to-violet-glow px-5 py-3 text-center text-base font-semibold text-ink-950"
+              href={store.login}
+              className="mt-2 rounded-full bg-foreground px-5 py-3 text-center text-base font-semibold text-ink-950"
             >
-              Get a Quote
+              Client portal →
             </Link>
           </div>
         </div>
@@ -127,5 +101,3 @@ export default function Navbar() {
     </header>
   );
 }
-
-export { site };
