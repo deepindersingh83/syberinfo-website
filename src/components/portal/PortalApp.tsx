@@ -111,6 +111,10 @@ export default function PortalApp() {
   }, []);
 
   useEffect(() => {
+    // Async session bootstrap on mount: load the customer, then show the
+    // dashboard or the sign-in screen. setState runs after the await, not
+    // synchronously in the effect body.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadMe().then((ok) => setView(ok ? "dash" : "login"));
   }, [loadMe]);
 

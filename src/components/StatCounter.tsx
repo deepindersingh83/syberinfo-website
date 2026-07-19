@@ -18,10 +18,9 @@ export default function StatCounter({ value }: { value: string }) {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const m = value.match(/^(\D*?)([\d,]+(?:\.\d+)?)(.*)$/);
-    if (!m || reduce) {
-      setDisplay(value);
-      return;
-    }
+    // Non-numeric or reduced-motion: nothing to animate — state already holds
+    // `value` from the initializer, so no synchronous setState is needed.
+    if (!m || reduce) return;
     const prefix = m[1];
     const numStr = m[2].replace(/,/g, "");
     const suffix = m[3];

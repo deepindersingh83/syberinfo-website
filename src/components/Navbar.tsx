@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { nav, store } from "@/lib/site";
 
 export default function Navbar() {
@@ -12,9 +12,7 @@ export default function Navbar() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  const closeMenu = () => setOpen(false);
 
   return (
     <header className="glass fixed inset-x-0 top-9 z-50 border-b border-white/[.06]">
@@ -78,6 +76,7 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={closeMenu}
                 className="rounded-lg px-3 py-3 text-base font-medium text-muted transition-colors hover:bg-white/5 hover:text-foreground"
               >
                 {item.label}
@@ -85,12 +84,14 @@ export default function Navbar() {
             ))}
             <Link
               href={store.login}
+              onClick={closeMenu}
               className="rounded-lg px-3 py-3 text-base font-medium text-muted hover:text-foreground"
             >
               Client login
             </Link>
             <Link
               href={store.login}
+              onClick={closeMenu}
               className="mt-2 rounded-full bg-foreground px-5 py-3 text-center text-base font-semibold text-ink-950"
             >
               Client portal →
