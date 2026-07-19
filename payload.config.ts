@@ -1,4 +1,5 @@
 import path from "path";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { buildConfig, type Access, type EmailAdapter } from "payload";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
@@ -81,18 +82,29 @@ const resendAdapter: EmailAdapter = () => ({
 
 const email = process.env.RESEND_API_KEY ? resendAdapter : undefined;
 
-// Fail fast in production at runtime if the signing secret was never set —
-// otherwise JWTs are signed with a publicly-known key and sessions can be
-// forged. Skipped during `next build` (no requests are served then).
-if (
-  process.env.NODE_ENV === "production" &&
-  process.env.NEXT_PHASE !== "phase-production-build" &&
-  (!process.env.PAYLOAD_SECRET || process.env.PAYLOAD_SECRET === "CHANGE_ME_IN_PRODUCTION")
-) {
-  throw new Error(
-    "PAYLOAD_SECRET is not set (or still the default). Set a strong random value before starting in production.",
-  );
+/**
+ * Resolve the signing secret. A missing/default secret in production is a
+ * security problem (JWTs signed with a publicly-known key), but it must NOT
+ * take the whole site down. So: warn loudly and fall back to a strong random
+ * per-process secret — the site stays up, the known-default key is never used,
+ * and sessions simply won't persist across restarts until PAYLOAD_SECRET is set.
+ */
+function resolveSecret(): string {
+  const provided = process.env.PAYLOAD_SECRET;
+  if (provided && provided !== "CHANGE_ME_IN_PRODUCTION") return provided;
+  const isProd =
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PHASE !== "phase-production-build";
+  if (isProd) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "[SECURITY] PAYLOAD_SECRET is not set. Using a random per-process secret so the site stays up — set PAYLOAD_SECRET so admin/portal sessions persist and are secure.",
+    );
+    return crypto.randomBytes(32).toString("hex");
+  }
+  return "CHANGE_ME_IN_PRODUCTION"; // development default
 }
+const PAYLOAD_SECRET = resolveSecret();
 
 const ACCENTS = [
   "from-cyan-glow to-violet-glow",
@@ -127,7 +139,7 @@ export default buildConfig({
   // Restrict cookie-based auth + API to known origins.
   cors: trustedOrigins,
   csrf: trustedOrigins,
-  secret: process.env.PAYLOAD_SECRET || "CHANGE_ME_IN_PRODUCTION",
+  secret: PAYLOAD_SECRET,
   email,
   typescript: {
     outputFile: path.resolve(dirname, "src/payload-types.ts"),
