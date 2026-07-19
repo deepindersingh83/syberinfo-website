@@ -30,7 +30,7 @@ export default async function CaseStudyPage({ params }: Params) {
     <div className="relative z-[1]">
       <section className="relative mx-auto max-w-[900px] px-5 pb-8 pt-[150px] sm:px-10">
         <div className="grid-bg pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_80%_60%_at_50%_20%,#000,transparent_75%)]" />
-        <Reveal>
+        <div>
           <Link href="/work" className="text-sm text-muted transition-colors hover:text-foreground">
             ← All case studies
           </Link>
@@ -48,7 +48,7 @@ export default async function CaseStudyPage({ params }: Params) {
             {c.title}
           </h1>
           <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-muted">{c.summary}</p>
-        </Reveal>
+        </div>
       </section>
 
       {/* banner */}

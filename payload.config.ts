@@ -789,18 +789,21 @@ export default buildConfig({
     // Loaded dynamically so the Payload CLI (migrations/types) doesn't need to
     // resolve app source when it loads this config.
     const {
-      services: seedServices,
       products: seedProducts,
-      testimonials: seedTestimonials,
-      posts: seedPosts,
       plans: seedPlans,
-      partners: seedPartners,
       generalFaqs: seedFaqs,
       helpArticles: seedHelp,
-      projects: seedProjects,
-      stats: seedStats,
       steps: seedSteps,
     } = await import("@/lib/data");
+    // Managed-IT content is the source of truth for these collections.
+    const {
+      services: seedServices,
+      testimonials: seedTestimonials,
+      posts: seedPosts,
+      partners: seedPartners,
+      projects: seedProjects,
+      stats: seedStats,
+    } = await import("@/lib/it-data");
 
     const { totalDocs: serviceCount } = await payload.count({
       collection: "services",
@@ -817,7 +820,7 @@ export default buildConfig({
             description: s.description,
             overview: s.overview,
             icon: s.icon,
-            accent: s.accent as (typeof ACCENTS)[number],
+            accent: ACCENTS[0],
             features: s.features.map((feature) => ({ feature })),
             benefits: s.benefits.map((benefit) => ({ benefit })),
             sections: s.sections.map((sec) => ({

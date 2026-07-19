@@ -59,7 +59,7 @@ export default async function ServiceDetailPage({ params }: Params) {
       {/* Hero */}
       <section className="relative mx-auto max-w-[1240px] px-5 pb-8 pt-[150px] sm:px-10">
         <div className="grid-bg pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_80%_60%_at_50%_20%,#000,transparent_75%)]" />
-        <Reveal>
+        <div>
           <Link href="/services" className="text-sm text-muted transition-colors hover:text-foreground">
             ← All services
           </Link>
@@ -96,7 +96,7 @@ export default async function ServiceDetailPage({ params }: Params) {
               </div>
             </div>
           </div>
-        </Reveal>
+        </div>
       </section>
 
       {/* Metrics */}

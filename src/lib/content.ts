@@ -47,14 +47,25 @@ async function tryPayload<T>(fn: (payload: Awaited<ReturnType<typeof getPayload>
 
 function mapService(d: unknown): Service {
   const doc = d as Record<string, unknown>;
+  const slug = String(doc.slug ?? "");
+  // Design-only fields (accent colours, glyph tints, key features, metrics)
+  // aren't modelled in the CMS — backfill them from the managed-IT source by
+  // slug so CMS-edited text keeps full design fidelity.
+  const design = fallbackServices.find((s) => s.slug === slug);
   return {
-    slug: String(doc.slug ?? ""),
+    slug,
     title: String(doc.title ?? ""),
     tagline: String(doc.tagline ?? ""),
     description: String(doc.description ?? ""),
     overview: String(doc.overview ?? ""),
-    icon: String(doc.icon ?? ""),
+    icon: String(doc.icon ?? design?.icon ?? ""),
     accent: String(doc.accent ?? "from-cyan-glow to-violet-glow"),
+    accentHex: design?.accentHex,
+    tintHex: design?.tintHex,
+    short: design?.short,
+    lead: design?.lead,
+    keyFeatures: design?.keyFeatures,
+    metrics: design?.metrics,
     features: Array.isArray(doc.features)
       ? (doc.features as { feature: string }[]).map((f) => f.feature)
       : [],

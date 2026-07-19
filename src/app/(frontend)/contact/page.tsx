@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Reveal from "@/components/Reveal";
 import LeadForm from "@/components/LeadForm";
 import { contactInfo } from "@/lib/it-data";
 
@@ -14,7 +13,7 @@ export default function ContactPage() {
     <section className="relative z-[1] mx-auto max-w-[1240px] px-5 pb-24 pt-[150px] sm:px-10">
       <div className="grid-bg pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_80%_60%_at_50%_15%,#000,transparent_75%)]" />
       <div className="grid items-start gap-16 md:grid-cols-[1fr_1.05fr]">
-        <Reveal>
+        <div>
           <div className="mb-3.5 font-mono text-[13px] tracking-[.05em] text-indigo">GET IN TOUCH</div>
           <h1 className="mb-[22px] max-w-[16ch] font-display text-[clamp(34px,5vw,56px)] font-bold leading-[1.05] tracking-[-.03em]">
             Tell us what&rsquo;s on your plate.
@@ -49,10 +48,10 @@ export default function ContactPage() {
               );
             })}
           </div>
-        </Reveal>
-        <Reveal>
+        </div>
+        <div>
           <LeadForm />
-        </Reveal>
+        </div>
       </div>
     </section>
   );
