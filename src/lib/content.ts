@@ -1,5 +1,6 @@
 import { getPayload } from "payload";
 import config from "@payload-config";
+import { logger } from "@/lib/logger";
 import {
   products as fallbackProducts,
   plans as fallbackPlans,
@@ -361,8 +362,13 @@ export async function saveSubscriber(
       data: { email, source },
     });
     return true;
-  } catch {
-    // Likely a duplicate (unique email) — treat as success.
+  } catch (err) {
+    // A duplicate (unique email) is fine; anything else is worth a log line.
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!/unique|duplicate/i.test(msg)) {
+      logger.error("saveSubscriber failed", { email, message: msg });
+      return false;
+    }
     return true;
   }
 }
@@ -449,7 +455,8 @@ export async function saveDataRequest(
       data: { email, type, details, status: "new" },
     });
     return true;
-  } catch {
+  } catch (err) {
+    logger.error("saveDataRequest failed", { email, message: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }
@@ -482,7 +489,8 @@ export async function saveLead(lead: LeadInput): Promise<boolean> {
       },
     });
     return true;
-  } catch {
+  } catch (err) {
+    logger.error("saveLead failed", { email: lead.email, message: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }

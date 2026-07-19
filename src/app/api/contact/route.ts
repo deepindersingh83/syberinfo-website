@@ -1,79 +1,49 @@
-import { NextResponse } from "next/server";
+import { z } from "zod";
 import { site } from "@/lib/site";
 import { saveLead } from "@/lib/content";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { json, readBody } from "@/lib/api";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
-type Payload = {
-  name?: string;
-  email?: string;
-  phone?: string;
-  service?: string;
-  message?: string;
-  company_website?: string; // honeypot
-  turnstileToken?: string;
-};
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const schema = z.object({
+  name: z.string().trim().min(1, "Please enter your name.").max(200),
+  email: z.string().trim().email("Please enter a valid email address.").max(254),
+  phone: z.string().trim().max(50).optional(),
+  service: z.string().trim().max(120).optional(),
+  message: z.string().trim().min(1, "Please enter a message.").max(5000),
+  company_website: z.string().optional(), // honeypot
+  turnstileToken: z.string().optional(),
+});
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
   if (!rateLimit(`contact:${ip}`, 5, 60_000).ok) {
-    return NextResponse.json(
-      { error: "Too many requests. Please try again shortly." },
-      { status: 429 },
-    );
+    return json({ error: "Too many requests. Please try again shortly." }, 429);
   }
 
-  let data: Payload;
-  try {
-    data = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  }
+  const parsed = await readBody(req, schema);
+  if ("error" in parsed) return parsed.error;
+  const data = parsed.data;
 
   // Honeypot: bots fill hidden fields → silently accept, do nothing.
-  if (data.company_website) {
-    return NextResponse.json({ ok: true });
-  }
+  if (data.company_website) return json({ ok: true });
 
   if (!(await verifyTurnstile(data.turnstileToken, ip))) {
-    return NextResponse.json(
-      { error: "Spam check failed. Please try again." },
-      { status: 400 },
-    );
-  }
-
-  const name = data.name?.trim();
-  const email = data.email?.trim();
-  const message = data.message?.trim();
-
-  if (!name || !email || !message) {
-    return NextResponse.json(
-      { error: "Please fill in your name, email and message." },
-      { status: 400 },
-    );
-  }
-  if (!EMAIL_RE.test(email)) {
-    return NextResponse.json(
-      { error: "Please enter a valid email address." },
-      { status: 400 },
-    );
+    return json({ error: "Spam check failed. Please try again." }, 400);
   }
 
   const lead = {
-    name,
-    email,
-    phone: data.phone?.trim() || "—",
-    service: data.service?.trim() || "—",
-    message,
+    name: data.name,
+    email: data.email,
+    phone: data.phone || "—",
+    service: data.service || "—",
+    message: data.message,
     receivedAt: new Date().toISOString(),
   };
 
-  // If Resend is configured, send a notification email. Otherwise log the lead
-  // so it's never lost in development / before email is wired up.
   const apiKey = process.env.RESEND_API_KEY;
   if (apiKey) {
     try {
@@ -86,8 +56,8 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           from: process.env.CONTACT_FROM || `SyberInfo <noreply@${site.domain}>`,
           to: process.env.CONTACT_TO || site.email,
-          reply_to: email,
-          subject: `New enquiry: ${lead.service} — ${name}`,
+          reply_to: data.email,
+          subject: `New enquiry: ${lead.service} — ${lead.name}`,
           text: [
             `Name: ${lead.name}`,
             `Email: ${lead.email}`,
@@ -101,34 +71,27 @@ export async function POST(req: Request) {
         }),
       });
       if (!res.ok) {
-        const detail = await res.text();
-        console.error("Resend error:", detail);
-        return NextResponse.json(
-          { error: "Could not send your message. Please email us directly." },
-          { status: 502 },
-        );
+        logger.error("contact: Resend send failed", { status: res.status, detail: await res.text() });
+        return json({ error: "Could not send your message. Please email us directly." }, 502);
       }
     } catch (err) {
-      console.error("Contact email failed:", err);
-      return NextResponse.json(
-        { error: "Could not send your message. Please email us directly." },
-        { status: 502 },
-      );
+      logger.error("contact: email transport error", { message: err instanceof Error ? err.message : String(err) });
+      return json({ error: "Could not send your message. Please email us directly." }, 502);
     }
   } else {
-    console.info("[contact] New lead (email not configured):", lead);
+    logger.info("contact: new lead (email not configured)", { email: lead.email, service: lead.service });
   }
 
-  // Always store the enquiry in the CMS so it's visible under Enquiries in the
-  // admin, regardless of email configuration. Don't fail the request if this
-  // doesn't work — email is the primary channel.
-  await saveLead({
-    name,
-    email,
-    phone: data.phone?.trim() || undefined,
-    service: data.service?.trim() || undefined,
-    message,
+  // Store the enquiry regardless of email config; log (don't fail) if it can't
+  // be persisted so a lead is never lost silently.
+  const stored = await saveLead({
+    name: data.name,
+    email: data.email,
+    phone: data.phone || undefined,
+    service: data.service || undefined,
+    message: data.message,
   });
+  if (!stored) logger.error("contact: failed to persist lead to CMS", { email: lead.email });
 
-  return NextResponse.json({ ok: true });
+  return json({ ok: true });
 }

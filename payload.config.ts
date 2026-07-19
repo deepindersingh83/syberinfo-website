@@ -1,12 +1,57 @@
 import path from "path";
 import { fileURLToPath } from "url";
-import { buildConfig } from "payload";
+import { buildConfig, type Access } from "payload";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
 import sharp from "sharp";
 
 import { migrations } from "./src/migrations";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/* ---------------------------------------------------------------------------
+   Access control. By default Payload allows any authenticated user, which — with
+   a `customers` auth collection — would let one customer read every other
+   customer's billing data via the REST/GraphQL API. These helpers lock each
+   collection to admins (the `users` collection) or the owning customer only.
+--------------------------------------------------------------------------- */
+type AuthedUser = { collection?: string; id?: string | number } | null | undefined;
+const isAdmin = (user: AuthedUser): boolean => !!user && user.collection === "users";
+
+/** Admins only. */
+const adminOnly: Access = ({ req: { user } }) => isAdmin(user as AuthedUser);
+
+/** Admins see all; a customer sees only their own record. */
+const adminOrSelf: Access = ({ req: { user } }) => {
+  const u = user as AuthedUser;
+  if (!u) return false;
+  if (isAdmin(u)) return true;
+  if (u.collection === "customers") return { id: { equals: u.id } };
+  return false;
+};
+
+/** Admins see all; a customer sees only rows whose `field` relates to them. */
+const ownerAccess =
+  (field = "customer"): Access =>
+  ({ req: { user } }) => {
+    const u = user as AuthedUser;
+    if (!u) return false;
+    if (isAdmin(u)) return true;
+    if (u.collection === "customers") return { [field]: { equals: u.id } };
+    return false;
+  };
+
+// Fail fast in production at runtime if the signing secret was never set —
+// otherwise JWTs are signed with a publicly-known key and sessions can be
+// forged. Skipped during `next build` (no requests are served then).
+if (
+  process.env.NODE_ENV === "production" &&
+  process.env.NEXT_PHASE !== "phase-production-build" &&
+  (!process.env.PAYLOAD_SECRET || process.env.PAYLOAD_SECRET === "CHANGE_ME_IN_PRODUCTION")
+) {
+  throw new Error(
+    "PAYLOAD_SECRET is not set (or still the default). Set a strong random value before starting in production.",
+  );
+}
 
 const ACCENTS = [
   "from-cyan-glow to-violet-glow",
@@ -25,6 +70,11 @@ const PLAN_CATEGORIES = [
   "Marketing & SEO",
 ] as const;
 
+const trustedOrigins = [
+  process.env.SITE_URL || "https://syberinfo.com.au",
+  ...(process.env.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
+];
+
 export default buildConfig({
   admin: {
     user: "users",
@@ -32,6 +82,9 @@ export default buildConfig({
       titleSuffix: "· SyberInfo Admin",
     },
   },
+  // Restrict cookie-based auth + API to known origins.
+  cors: trustedOrigins,
+  csrf: trustedOrigins,
   secret: process.env.PAYLOAD_SECRET || "CHANGE_ME_IN_PRODUCTION",
   typescript: {
     outputFile: path.resolve(dirname, "src/payload-types.ts"),
@@ -52,8 +105,18 @@ export default buildConfig({
   collections: [
     {
       slug: "users",
-      auth: true,
+      auth: {
+        maxLoginAttempts: 5,
+        lockTime: 10 * 60 * 1000, // 10 minutes
+        tokenExpiration: 60 * 60 * 8, // 8 hours
+      },
       admin: { useAsTitle: "email", group: "Settings" },
+      access: {
+        read: adminOnly,
+        create: adminOnly,
+        update: adminOnly,
+        delete: adminOnly,
+      },
       fields: [
         { name: "name", type: "text" },
       ],
@@ -303,7 +366,7 @@ export default buildConfig({
         group: "Enquiries",
       },
       // Submitted by the public contact form; only admins can read/manage.
-      access: { create: () => true },
+      access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "name", type: "text", required: true },
         { name: "email", type: "email", required: true },
@@ -427,7 +490,7 @@ export default buildConfig({
         defaultColumns: ["email", "source", "createdAt"],
         group: "Enquiries",
       },
-      access: { create: () => true },
+      access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "email", type: "email", required: true, unique: true },
         {
@@ -529,7 +592,7 @@ export default buildConfig({
         defaultColumns: ["email", "type", "status", "createdAt"],
         group: "Enquiries",
       },
-      access: { create: () => true },
+      access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "email", type: "email", required: true },
         {
@@ -558,8 +621,27 @@ export default buildConfig({
     {
       slug: "customers",
       labels: { singular: "Customer", plural: "Customers" },
-      auth: true,
+      auth: {
+        maxLoginAttempts: 5,
+        lockTime: 10 * 60 * 1000, // 10 minutes
+        tokenExpiration: 60 * 60 * 24 * 7, // 7 days
+        forgotPassword: {
+          generateEmailSubject: () => "Reset your SyberInfo portal password",
+          generateEmailHTML: (args) => {
+            const token = (args as { token?: string })?.token ?? "";
+            const base = process.env.SITE_URL || "https://syberinfo.com.au";
+            const url = `${base}/portal/reset-password?token=${token}`;
+            return `<p>Hi,</p><p>We received a request to reset your SyberInfo client portal password. Click the link below to choose a new one — it expires in one hour.</p><p><a href="${url}">Reset my password</a></p><p>If you didn't request this, you can safely ignore this email.</p><p>— SyberInfo</p>`;
+          },
+        },
+      },
       admin: { useAsTitle: "email", group: "Billing", defaultColumns: ["email", "name", "company"] },
+      access: {
+        read: adminOrSelf,
+        update: adminOrSelf,
+        create: adminOnly, // public sign-up goes through /api/portal/register (rate-limited)
+        delete: adminOnly,
+      },
       fields: [
         { name: "name", type: "text", required: true },
         { name: "company", type: "text" },
@@ -577,6 +659,7 @@ export default buildConfig({
       slug: "orders",
       labels: { singular: "Order", plural: "Orders" },
       admin: { useAsTitle: "id", group: "Billing", defaultColumns: ["customer", "total", "status", "createdAt"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "customer", type: "relationship", relationTo: "customers" },
         {
@@ -602,6 +685,7 @@ export default buildConfig({
       slug: "subscriptions",
       labels: { singular: "Service", plural: "Services (Subscriptions)" },
       admin: { useAsTitle: "label", group: "Billing", defaultColumns: ["label", "customer", "status", "nextDueDate"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "label", type: "text", required: true, admin: { description: "e.g. Web Hosting — example.com.au" } },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -622,6 +706,7 @@ export default buildConfig({
       slug: "invoices",
       labels: { singular: "Invoice", plural: "Invoices" },
       admin: { useAsTitle: "number", group: "Billing", defaultColumns: ["number", "customer", "total", "status", "dueDate"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "number", type: "text", required: true, unique: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -651,6 +736,7 @@ export default buildConfig({
       slug: "transactions",
       labels: { singular: "Transaction", plural: "Transactions" },
       admin: { useAsTitle: "reference", group: "Billing", defaultColumns: ["reference", "customer", "amount", "status"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "reference", type: "text" },
         { name: "invoice", type: "relationship", relationTo: "invoices" },
@@ -669,6 +755,7 @@ export default buildConfig({
       slug: "client-domains",
       labels: { singular: "Domain", plural: "Domains" },
       admin: { useAsTitle: "domain", group: "Billing", defaultColumns: ["domain", "customer", "expiryDate", "status"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "domain", type: "text", required: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -688,6 +775,7 @@ export default buildConfig({
       slug: "tickets",
       labels: { singular: "Ticket", plural: "Support Tickets" },
       admin: { useAsTitle: "subject", group: "Billing", defaultColumns: ["subject", "customer", "status", "priority"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "subject", type: "text", required: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -723,6 +811,7 @@ export default buildConfig({
       slug: "coupons",
       labels: { singular: "Coupon", plural: "Coupons" },
       admin: { useAsTitle: "code", group: "Billing", defaultColumns: ["code", "type", "value", "active"] },
+      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "code", type: "text", required: true, unique: true },
         {
@@ -772,6 +861,7 @@ export default buildConfig({
       slug: "billing-settings",
       label: "Billing Settings",
       admin: { group: "Billing" },
+      access: { read: adminOnly, update: adminOnly },
       fields: [
         { name: "companyLegalName", type: "text", defaultValue: "SyberInfo" },
         { name: "abn", type: "text" },

@@ -8,11 +8,33 @@ import { withPayload } from "@payloadcms/next/withPayload";
  */
 const basePath = process.env.BASE_PATH || undefined;
 
+// Baseline security headers applied to every response. Note: the /admin panel
+// needs some inline styles/scripts, so we keep a pragmatic CSP rather than a
+// strict nonce-based one. Tighten `script-src`/`style-src` if you drop Payload
+// admin from this deployment.
+const securityHeaders = [
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "X-DNS-Prefetch-Control", value: "on" },
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+  },
+];
+
 const nextConfig: NextConfig = {
   basePath,
   // Produces a self-contained server build (.next/standalone) that's ideal for
   // running behind CloudPanel's nginx reverse proxy with PM2. See DEPLOY.md.
   output: "standalone",
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
 };
 
 export default withPayload(nextConfig);
