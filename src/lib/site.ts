@@ -66,6 +66,7 @@ export const footerCols = [
       { label: "Case studies", href: "/work" },
       { label: "Careers", href: "/careers" },
       { label: "Insights", href: "/blog" },
+      { label: "Essential Eight check", href: "/essential-eight" },
     ],
   },
   {

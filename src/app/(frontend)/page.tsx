@@ -3,6 +3,7 @@ import Reveal from "@/components/Reveal";
 import StatCounter from "@/components/StatCounter";
 import FaqAccordion from "@/components/FaqAccordion";
 import LeadForm from "@/components/LeadForm";
+import JsonLd, { faqJsonLd } from "@/components/JsonLd";
 import { getServices, getStats } from "@/lib/content";
 import {
   testimonials,
@@ -28,6 +29,7 @@ export default async function Home() {
 
   return (
     <>
+      <JsonLd data={faqJsonLd(homeFaqs)} />
       {/* ============ HERO ============ */}
       <header
         id="top"
