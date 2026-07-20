@@ -1,13 +1,22 @@
 import { logger } from "@/lib/logger";
 
 /**
- * Ingram Micro Cloud "Marketplace API" (v1.16) client.
+ * Ingram Micro Cloud "Marketplace API" (CMP, v1.16) client.
  *
- * Auth (confirmed working): OAuth2 client-credentials →
- *   POST https://api.ingrammicro.com/oauth/oauth20/token  (INGRAM_TOKEN_URL)
- * Every Marketplace request additionally needs the gateway subscription key
+ * Two token flows are supported (select with INGRAM_AUTH_MODE):
+ *
+ *  - "cmp" (default, per the Xvantage CMP guide): Basic auth against the
+ *    gateway `POST {base}/token` with header `X-Subscription-Key` and body
+ *    `{"marketplace":"<region>"}` → `{ token, expiresInSeconds }`. The Basic
+ *    credentials are INGRAM_CLIENT_ID:INGRAM_CLIENT_SECRET (the CMP username /
+ *    password), region is INGRAM_MARKETPLACE (e.g. "au", "us").
+ *
+ *  - "oauth": OAuth2 client-credentials against INGRAM_TOKEN_URL
+ *    (https://api.ingrammicro.com/oauth/oauth20/token) → `{ access_token }`.
+ *
+ * Every Marketplace request additionally needs the gateway subscription-key
  * header `X-Subscription-Key` (INGRAM_SUBSCRIPTION_KEY) and the account's base
- * URL (INGRAM_BASE_URL) — both come from your developer-portal subscription.
+ * URL (INGRAM_BASE_URL) — both come from the developer-portal subscription page.
  *
  * Endpoints used: GET {base}/products (catalogue), GET {base}/plans,
  * POST {base}/orders (place a subscription order).
@@ -24,12 +33,38 @@ export function ingramEnabled(): boolean {
   );
 }
 
+function authMode(): "cmp" | "oauth" {
+  return (process.env.INGRAM_AUTH_MODE || "cmp").toLowerCase() === "oauth" ? "oauth" : "cmp";
+}
+
 const TOKEN_URL = () => process.env.INGRAM_TOKEN_URL || "https://api.ingrammicro.com/oauth/oauth20/token";
+const marketplace = () => process.env.INGRAM_MARKETPLACE || "au";
 
 let cachedToken: { value: string; expires: number } | null = null;
 
-async function getToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expires - 60_000) return cachedToken.value;
+/** CMP token flow: Basic auth + X-Subscription-Key + {"marketplace"} body. */
+async function getCmpToken(): Promise<{ value: string; ttl: number }> {
+  const base = process.env.INGRAM_BASE_URL!.replace(/\/+$/, "");
+  const basic = Buffer.from(
+    `${process.env.INGRAM_CLIENT_ID}:${process.env.INGRAM_CLIENT_SECRET}`,
+  ).toString("base64");
+  const res = await fetch(`${base}/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "X-Subscription-Key": process.env.INGRAM_SUBSCRIPTION_KEY!,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ marketplace: marketplace() }),
+  });
+  if (!res.ok) throw new Error(`Ingram CMP token failed: ${res.status} ${await res.text()}`);
+  const data = (await res.json()) as { token: string; expiresInSeconds?: number | string };
+  return { value: data.token, ttl: Number(data.expiresInSeconds ?? 1500) };
+}
+
+/** OAuth2 client-credentials flow. */
+async function getOauthToken(): Promise<{ value: string; ttl: number }> {
   const body = new URLSearchParams({
     grant_type: "client_credentials",
     client_id: process.env.INGRAM_CLIENT_ID!,
@@ -42,10 +77,13 @@ async function getToken(): Promise<string> {
   });
   if (!res.ok) throw new Error(`Ingram token failed: ${res.status} ${await res.text()}`);
   const data = (await res.json()) as { access_token: string; expires_in?: number | string };
-  cachedToken = {
-    value: data.access_token,
-    expires: Date.now() + Number(data.expires_in ?? 3600) * 1000,
-  };
+  return { value: data.access_token, ttl: Number(data.expires_in ?? 3600) };
+}
+
+async function getToken(): Promise<string> {
+  if (cachedToken && Date.now() < cachedToken.expires - 60_000) return cachedToken.value;
+  const { value, ttl } = authMode() === "oauth" ? await getOauthToken() : await getCmpToken();
+  cachedToken = { value, expires: Date.now() + ttl * 1000 };
   return cachedToken.value;
 }
 
