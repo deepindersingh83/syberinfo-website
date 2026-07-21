@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { services } from "@/lib/data";
+import { services } from "@/lib/it-data";
+import Turnstile from "@/components/Turnstile";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
 export default function ContactForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+  const [token, setToken] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,7 +23,7 @@ export default function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, turnstileToken: token }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -117,6 +119,8 @@ export default function ContactForm() {
         className="hidden"
         aria-hidden
       />
+
+      <Turnstile onToken={setToken} />
 
       {status === "error" && (
         <p className="mt-4 rounded-xl border border-pink-glow/30 bg-pink-glow/10 px-4 py-3 text-sm text-pink-glow">

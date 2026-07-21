@@ -1,0 +1,135 @@
+/* =========================================================================
+   SyberInfo — admin panel reskin
+   Rebrands the Payload admin to the managed-IT design: near-black ink canvas,
+   indigo (#5E5BFF) accent, lime (#C9F25E) focus. Pure CSS-variable overrides +
+   a few targeted selectors, so it survives Payload minor upgrades.
+   ========================================================================= */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap");
+
+/* Remap Payload's accent ramp (blue) to SyberInfo indigo — recolours links,
+   active nav, checkboxes, focus states and primary chips in both themes. */
+:root {
+  --color-blue-50: #eef0ff;
+  --color-blue-100: #e0e2ff;
+  --color-blue-150: #cfd0ff;
+  --color-blue-200: #bcbcff;
+  --color-blue-250: #a9a8ff;
+  --color-blue-300: #9694ff;
+  --color-blue-350: #8380ff;
+  --color-blue-400: #706cff;
+  --color-blue-450: #6360ff;
+  --color-blue-500: #5e5bff;
+  --color-blue-550: #5350f0;
+  --color-blue-600: #4a47e0;
+  --color-blue-650: #423fce;
+  --color-blue-700: #3f3dcc;
+  --color-blue-750: #3835b8;
+  --color-blue-800: #302ea3;
+  --color-blue-850: #29278f;
+  --color-blue-900: #21207a;
+  --color-blue-950: #191866;
+
+  --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Dark theme → SyberInfo ink canvas */
+[data-theme="dark"] {
+  --theme-bg: #0a0c10;
+  --theme-text: #edeff3;
+  --theme-elevation-0: #0a0c10;
+  --theme-elevation-50: #0c0e13;
+  --theme-elevation-100: #10131a;
+  --theme-elevation-150: #171b24;
+  --theme-elevation-200: #1f2430;
+  --theme-input-bg: rgba(255, 255, 255, 0.03);
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4,
+.step-nav,
+.nav__label,
+.dashboard__label,
+.collection-list__title,
+.doc-header__title {
+  font-family: var(--font-serif);
+  letter-spacing: -0.01em;
+}
+
+code,
+.tooltip {
+  font-family: var(--font-mono);
+}
+
+/* Primary buttons + pills → indigo */
+.btn--style-primary {
+  --bg-color: #5e5bff;
+  --color: #ffffff;
+  --hover-bg: #4a47e0;
+  --hover-color: #ffffff;
+  box-shadow: 0 6px 22px rgba(94, 91, 255, 0.35);
+}
+.btn--style-primary:hover {
+  transform: translateY(-1px);
+}
+
+/* Links + active nav accent */
+a,
+.nav__link:hover {
+  color: #7d7bff;
+}
+.nav__link--active,
+.nav-group__toggle--open {
+  color: #edeff3;
+}
+
+/* Lime focus ring, matching the public site */
+*:focus-visible {
+  outline: 2px solid #c9f25e !important;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Rounder, softer surfaces */
+.card,
+.collection-list,
+.table,
+.field-type input,
+.field-type textarea,
+.field-type .rs__control {
+  border-radius: 10px;
+}
+
+/* Login screen: brand wordmark + tagline */
+.login__wrap {
+  position: relative;
+}
+.login .graphic-logo,
+.login__brand svg {
+  display: none;
+}
+.login__wrap::before {
+  content: "SyberInfo";
+  display: block;
+  text-align: center;
+  font-family: var(--font-serif);
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: -0.03em;
+  color: #edeff3;
+  margin-bottom: 6px;
+}
+.login__wrap::after {
+  content: "Client & billing administration";
+  display: block;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #737b8a;
+  margin-bottom: 26px;
+}
