@@ -1,16 +1,11 @@
 import { getPayload } from "payload";
 import config from "@payload-config";
+import { logger } from "@/lib/logger";
 import {
-  services as fallbackServices,
   products as fallbackProducts,
-  testimonials as fallbackTestimonials,
-  posts as fallbackPosts,
   plans as fallbackPlans,
-  partners as fallbackPartners,
   generalFaqs as fallbackFaqs,
   helpArticles as fallbackHelp,
-  projects as fallbackProjects,
-  stats as fallbackStats,
   steps as fallbackSteps,
   type Service,
   type Product,
@@ -21,6 +16,16 @@ import {
   type HelpArticle,
   type Project,
 } from "./data";
+// Managed-IT content is the source of truth for these collections; the CMS
+// overrides them once seeded, otherwise these are served.
+import {
+  services as fallbackServices,
+  testimonials as fallbackTestimonials,
+  posts as fallbackPosts,
+  partners as fallbackPartners,
+  projects as fallbackProjects,
+  stats as fallbackStats,
+} from "./it-data";
 
 type Testimonial = { quote: string; name: string; role: string };
 type Stat = { value: string; label: string };
@@ -43,14 +48,25 @@ async function tryPayload<T>(fn: (payload: Awaited<ReturnType<typeof getPayload>
 
 function mapService(d: unknown): Service {
   const doc = d as Record<string, unknown>;
+  const slug = String(doc.slug ?? "");
+  // Design-only fields (accent colours, glyph tints, key features, metrics)
+  // aren't modelled in the CMS — backfill them from the managed-IT source by
+  // slug so CMS-edited text keeps full design fidelity.
+  const design = fallbackServices.find((s) => s.slug === slug);
   return {
-    slug: String(doc.slug ?? ""),
+    slug,
     title: String(doc.title ?? ""),
     tagline: String(doc.tagline ?? ""),
     description: String(doc.description ?? ""),
     overview: String(doc.overview ?? ""),
-    icon: String(doc.icon ?? ""),
+    icon: String(doc.icon ?? design?.icon ?? ""),
     accent: String(doc.accent ?? "from-cyan-glow to-violet-glow"),
+    accentHex: design?.accentHex,
+    tintHex: design?.tintHex,
+    short: design?.short,
+    lead: design?.lead,
+    keyFeatures: design?.keyFeatures,
+    metrics: design?.metrics,
     features: Array.isArray(doc.features)
       ? (doc.features as { feature: string }[]).map((f) => f.feature)
       : [],
@@ -346,8 +362,13 @@ export async function saveSubscriber(
       data: { email, source },
     });
     return true;
-  } catch {
-    // Likely a duplicate (unique email) — treat as success.
+  } catch (err) {
+    // A duplicate (unique email) is fine; anything else is worth a log line.
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!/unique|duplicate/i.test(msg)) {
+      logger.error("saveSubscriber failed", { email, message: msg });
+      return false;
+    }
     return true;
   }
 }
@@ -434,7 +455,8 @@ export async function saveDataRequest(
       data: { email, type, details, status: "new" },
     });
     return true;
-  } catch {
+  } catch (err) {
+    logger.error("saveDataRequest failed", { email, message: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }
@@ -467,7 +489,8 @@ export async function saveLead(lead: LeadInput): Promise<boolean> {
       },
     });
     return true;
-  } catch {
+  } catch (err) {
+    logger.error("saveLead failed", { email: lead.email, message: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }

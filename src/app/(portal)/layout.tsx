@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Sora, JetBrains_Mono } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "../globals.css";
 
-const sans = Sora({ variable: "--font-sans", subsets: ["latin"], display: "swap" });
+const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["latin"], display: "swap" });
+const sans = DM_Sans({ variable: "--font-sans", subsets: ["latin"], display: "swap" });
 const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default function PortalRootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en-AU" className={`${sans.variable} ${mono.variable} h-full`}>
+    <html lang="en-AU" className={`${display.variable} ${sans.variable} ${mono.variable} h-full`}>
       <body className="min-h-full antialiased">{children}</body>
     </html>
   );

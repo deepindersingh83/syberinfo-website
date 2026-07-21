@@ -1,30 +1,33 @@
-import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getPayload } from "payload";
 import config from "@payload-config";
 import { getCurrentCustomer } from "@/lib/customer";
+import { json, readBody, sameOrigin } from "@/lib/api";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
+
+const schema = z.object({
+  message: z.string().trim().min(1, "Message is required.").max(5000),
+});
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!sameOrigin(req)) return json({ error: "Invalid origin." }, 403);
+
   const { id } = await params;
   const customer = await getCurrentCustomer();
-  if (!customer) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  if (!customer) return json({ error: "Not authenticated." }, 401);
+
+  if (!rateLimit(`ticket-reply:${customer.id}`, 20, 60_000).ok) {
+    return json({ error: "Too many requests. Please slow down." }, 429);
   }
 
-  let body: { message?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  }
-  const message = body.message?.trim();
-  if (!message) {
-    return NextResponse.json({ error: "Message is required." }, { status: 400 });
-  }
+  const parsed = await readBody(req, schema);
+  if ("error" in parsed) return parsed.error;
+  const { message } = parsed.data;
 
   const payload = await getPayload({ config });
   const ticket = (await payload.findByID({
@@ -37,7 +40,7 @@ export async function POST(
   const owner = ticket.customer as { id?: string | number } | string | number;
   const ownerId = typeof owner === "object" ? owner?.id : owner;
   if (String(ownerId) !== String(customer.id)) {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return json({ error: "Not found." }, 404);
   }
 
   const existing = Array.isArray(ticket.messages)
@@ -50,12 +53,9 @@ export async function POST(
     overrideAccess: true,
     data: {
       status: "customer-reply",
-      messages: [
-        ...existing,
-        { author: customer.name || customer.email, message },
-      ],
+      messages: [...existing, { author: customer.name || customer.email, message }],
     },
   });
 
-  return NextResponse.json({ ok: true });
+  return json({ ok: true });
 }

@@ -1,10 +1,23 @@
 /**
- * Tiny in-memory rate limiter (per key, sliding window). Suitable for a single
- * Node instance (e.g. one PM2 process on CloudPanel). For multi-instance setups,
- * swap for a shared store like Redis.
+ * Tiny in-memory rate limiter (per key, fixed window). Suitable for a single
+ * Node instance (e.g. one PM2 process on CloudPanel). For multi-instance
+ * deploys set REDIS_URL and swap this for a shared store — the call sites use
+ * the same `rateLimit()` signature so only this file changes.
+ *
+ * Expired buckets are evicted opportunistically so the Map can't grow forever.
  */
 type Hit = { count: number; reset: number };
 const buckets = new Map<string, Hit>();
+let lastSweep = 0;
+
+function sweep(now: number) {
+  // Sweep at most once every 60s to keep it cheap.
+  if (now - lastSweep < 60_000) return;
+  lastSweep = now;
+  for (const [key, hit] of buckets) {
+    if (now > hit.reset) buckets.delete(key);
+  }
+}
 
 export function rateLimit(
   key: string,
@@ -12,6 +25,7 @@ export function rateLimit(
   windowMs = 60_000,
 ): { ok: boolean; retryAfter: number } {
   const now = Date.now();
+  sweep(now);
   const hit = buckets.get(key);
 
   if (!hit || now > hit.reset) {
@@ -25,9 +39,22 @@ export function rateLimit(
   return { ok: true, retryAfter: 0 };
 }
 
-/** Best-effort client IP from request headers. */
+/**
+ * Best-effort client IP. Only trusts proxy headers when TRUST_PROXY isn't
+ * disabled (true behind CloudPanel/nginx); otherwise they're spoofable and
+ * would let a client dodge the limiter. Falls back to a coarse per-UA bucket so
+ * a single header-less client can't hold the whole limit for everyone.
+ */
 export function clientIp(req: Request): string {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || "unknown";
+  const trustProxy = process.env.TRUST_PROXY !== "false"; // default true (deployed behind nginx)
+  if (trustProxy) {
+    const xff = req.headers.get("x-forwarded-for");
+    if (xff) return xff.split(",")[0].trim();
+    const xri = req.headers.get("x-real-ip");
+    if (xri) return xri.trim();
+  }
+  const ua = req.headers.get("user-agent") || "";
+  let h = 0;
+  for (let i = 0; i < ua.length; i++) h = (h * 31 + ua.charCodeAt(i)) | 0;
+  return `unknown:${h}`;
 }

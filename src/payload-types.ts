@@ -71,6 +71,7 @@ export interface Config {
     users: User;
     services: Service;
     products: Product;
+    software: Software;
     testimonials: Testimonial;
     posts: Post;
     leads: Lead;
@@ -100,6 +101,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     services: ServicesSelect<false> | ServicesSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
+    software: SoftwareSelect<false> | SoftwareSelect<true>;
     testimonials: TestimonialsSelect<false> | TestimonialsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     leads: LeadsSelect<false> | LeadsSelect<true>;
@@ -356,6 +358,69 @@ export interface Product {
       }[]
     | null;
   order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "software".
+ */
+export interface Software {
+  id: number;
+  /**
+   * e.g. Microsoft 365
+   */
+  name: string;
+  /**
+   * Vendor, e.g. Microsoft
+   */
+  brand?: string | null;
+  category?:
+    | ('Productivity' | 'Creative' | 'Communication' | 'Dev Tools' | 'Storage' | 'Security' | 'Cloud' | 'Other')
+    | null;
+  /**
+   * 1–2 char badge, e.g. M
+   */
+  letter?: string | null;
+  /**
+   * Badge colour hex, e.g. #0078D4
+   */
+  color?: string | null;
+  tagline?: string | null;
+  active?: boolean | null;
+  /**
+   * Lower shows first
+   */
+  order?: number | null;
+  plans?:
+    | {
+        /**
+         * e.g. Business Standard
+         */
+        name: string;
+        /**
+         * AUD ex-GST
+         */
+        price?: number | null;
+        unit?: string | null;
+        /**
+         * Short inclusions line
+         */
+        feature?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  addons?:
+    | {
+        name: string;
+        /**
+         * AUD ex-GST / month
+         */
+        price?: number | null;
+        desc?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -847,6 +912,10 @@ export interface PayloadLockedDocument {
         value: number | Product;
       } | null)
     | ({
+        relationTo: 'software';
+        value: number | Software;
+      } | null)
+    | ({
         relationTo: 'testimonials';
         value: number | Testimonial;
       } | null)
@@ -1090,6 +1159,39 @@ export interface ProductsSelect<T extends boolean = true> {
         id?: T;
       };
   order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "software_select".
+ */
+export interface SoftwareSelect<T extends boolean = true> {
+  name?: T;
+  brand?: T;
+  category?: T;
+  letter?: T;
+  color?: T;
+  tagline?: T;
+  active?: T;
+  order?: T;
+  plans?:
+    | T
+    | {
+        name?: T;
+        price?: T;
+        unit?: T;
+        feature?: T;
+        id?: T;
+      };
+  addons?:
+    | T
+    | {
+        name?: T;
+        price?: T;
+        desc?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

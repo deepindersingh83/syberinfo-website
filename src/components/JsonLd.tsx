@@ -34,3 +34,26 @@ export function breadcrumbJsonLd(items: { name: string; url: string }[]) {
     })),
   };
 }
+
+export function articleJsonLd(args: {
+  title: string;
+  description: string;
+  url: string;
+  datePublished?: string;
+  author?: string;
+  publisher: string;
+  image?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: args.title,
+    description: args.description,
+    mainEntityOfPage: args.url,
+    url: args.url,
+    ...(args.datePublished ? { datePublished: args.datePublished } : {}),
+    author: { "@type": "Organization", name: args.author || args.publisher },
+    publisher: { "@type": "Organization", name: args.publisher },
+    ...(args.image ? { image: args.image } : {}),
+  };
+}

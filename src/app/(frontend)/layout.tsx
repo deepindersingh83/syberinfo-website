@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
-import { Sora, JetBrains_Mono } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "../globals.css";
+import TopBar from "@/components/TopBar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import InteractiveBackground from "@/components/InteractiveBackground";
 import ScrollToTop from "@/components/ScrollToTop";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import MobileCTA from "@/components/MobileCTA";
 import CookieConsent from "@/components/CookieConsent";
 import { site } from "@/lib/site";
 
-const sans = Sora({
+const display = Bricolage_Grotesque({
+  variable: "--font-display",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const sans = DM_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
@@ -23,21 +31,21 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} — Web Development, Design, SEO & Digital Marketing`,
+    default: `${site.name} — Managed IT, Cloud & Cybersecurity for Australian business`,
     template: `%s · ${site.name}`,
   },
   description: site.description,
   keywords: [
-    "web development",
-    "web design",
-    "SEO",
-    "SMO",
-    "digital marketing",
-    "domain registration",
-    "web hosting",
-    "linux hosting",
-    "Google Workspace reseller",
-    "Microsoft 365 reseller",
+    "managed IT services",
+    "managed service provider",
+    "cybersecurity",
+    "cloud migration",
+    "Microsoft 365",
+    "Azure",
+    "backup and disaster recovery",
+    "IT support Melbourne",
+    "Essential Eight",
+    "vCIO",
     "Australia",
   ],
   authors: [{ name: site.name }],
@@ -46,12 +54,12 @@ export const metadata: Metadata = {
     locale: "en_AU",
     url: site.url,
     siteName: site.name,
-    title: `${site.name} — Web. Design. Growth.`,
+    title: `${site.name} — IT that quietly runs while you build`,
     description: site.description,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${site.name} — Web. Design. Growth.`,
+    title: `${site.name} — IT that quietly runs while you build`,
     description: site.description,
   },
   alternates: { canonical: site.url },
@@ -70,15 +78,12 @@ const jsonLd = {
   identifier: { "@type": "PropertyValue", propertyID: "ABN", value: site.abn },
   sameAs: Object.values(site.social),
   makesOffer: [
-    "Web Development",
-    "Web Design",
-    "SEO",
-    "Social Media Optimisation",
-    "Digital Marketing",
-    "Domain Registration",
-    "Web Hosting",
-    "Google Workspace",
-    "Microsoft 365",
+    "Managed IT & Support",
+    "Cloud & Infrastructure",
+    "Cybersecurity",
+    "Backup & Recovery",
+    "Networks & VoIP",
+    "IT Strategy & vCIO",
   ].map((name) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name } })),
 };
 
@@ -86,17 +91,22 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en-AU" className={`${sans.variable} ${mono.variable} h-full`}>
-      <body className="min-h-full overflow-x-hidden antialiased">
+    <html
+      lang="en-AU"
+      className={`${display.variable} ${sans.variable} ${mono.variable} h-full`}
+    >
+      <body className="relative min-h-full overflow-x-hidden antialiased">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <InteractiveBackground />
+        <TopBar />
         <Navbar />
-        <main>{children}</main>
+        <main className="relative z-[1]">{children}</main>
         <Footer />
         <ScrollToTop />
-        <WhatsAppButton />
+        <MobileCTA />
         <CookieConsent />
       </body>
     </html>

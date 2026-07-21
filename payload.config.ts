@@ -1,12 +1,110 @@
 import path from "path";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
-import { buildConfig } from "payload";
+import { buildConfig, type Access, type EmailAdapter } from "payload";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
 import sharp from "sharp";
 
 import { migrations } from "./src/migrations";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/* ---------------------------------------------------------------------------
+   Access control. By default Payload allows any authenticated user, which — with
+   a `customers` auth collection — would let one customer read every other
+   customer's billing data via the REST/GraphQL API. These helpers lock each
+   collection to admins (the `users` collection) or the owning customer only.
+--------------------------------------------------------------------------- */
+type AuthedUser = { collection?: string; id?: string | number } | null | undefined;
+const isAdmin = (user: AuthedUser): boolean => !!user && user.collection === "users";
+
+/** Admins only. */
+const adminOnly: Access = ({ req: { user } }) => isAdmin(user as AuthedUser);
+
+/** Admins see all; a customer sees only their own record. */
+const adminOrSelf: Access = ({ req: { user } }) => {
+  const u = user as AuthedUser;
+  if (!u) return false;
+  if (isAdmin(u)) return true;
+  if (u.collection === "customers") return { id: { equals: u.id } };
+  return false;
+};
+
+/** Admins see all; a customer sees only rows whose `field` relates to them. */
+const ownerAccess =
+  (field = "customer"): Access =>
+  ({ req: { user } }) => {
+    const u = user as AuthedUser;
+    if (!u) return false;
+    if (isAdmin(u)) return true;
+    if (u.collection === "customers") return { [field]: { equals: u.id } };
+    return false;
+  };
+
+/**
+ * Email transport. Uses the Resend HTTP API directly (no extra dependency) so
+ * Payload can send password-reset and notification emails. When RESEND_API_KEY
+ * is unset, `email` is left undefined and Payload logs messages to the console.
+ */
+const FROM_ADDRESS = process.env.CONTACT_FROM_ADDRESS || "noreply@syberinfo.com.au";
+const FROM_NAME = process.env.CONTACT_FROM_NAME || "SyberInfo";
+
+const resendAdapter: EmailAdapter = () => ({
+  name: "resend-http",
+  defaultFromAddress: FROM_ADDRESS,
+  defaultFromName: FROM_NAME,
+  async sendEmail(message) {
+    const toList = Array.isArray(message.to) ? message.to : [message.to];
+    const from =
+      typeof message.from === "string" && message.from
+        ? message.from
+        : `${FROM_NAME} <${FROM_ADDRESS}>`;
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: toList,
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(`Resend send failed: ${res.status} ${await res.text()}`);
+    }
+    return res.json();
+  },
+});
+
+const email = process.env.RESEND_API_KEY ? resendAdapter : undefined;
+
+/**
+ * Resolve the signing secret. A missing/default secret in production is a
+ * security problem (JWTs signed with a publicly-known key), but it must NOT
+ * take the whole site down. So: warn loudly and fall back to a strong random
+ * per-process secret — the site stays up, the known-default key is never used,
+ * and sessions simply won't persist across restarts until PAYLOAD_SECRET is set.
+ */
+function resolveSecret(): string {
+  const provided = process.env.PAYLOAD_SECRET;
+  if (provided && provided !== "CHANGE_ME_IN_PRODUCTION") return provided;
+  const isProd =
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PHASE !== "phase-production-build";
+  if (isProd) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "[SECURITY] PAYLOAD_SECRET is not set. Using a random per-process secret so the site stays up — set PAYLOAD_SECRET so admin/portal sessions persist and are secure.",
+    );
+    return crypto.randomBytes(32).toString("hex");
+  }
+  return "CHANGE_ME_IN_PRODUCTION"; // development default
+}
+const PAYLOAD_SECRET = resolveSecret();
 
 const ACCENTS = [
   "from-cyan-glow to-violet-glow",
@@ -25,14 +123,27 @@ const PLAN_CATEGORIES = [
   "Marketing & SEO",
 ] as const;
 
+const trustedOrigins = [
+  process.env.SITE_URL || "https://syberinfo.com.au",
+  ...(process.env.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
+];
+
 export default buildConfig({
   admin: {
     user: "users",
+    theme: "dark",
+    components: {
+      beforeDashboard: ["@/components/admin/DashboardStats#default"],
+    },
     meta: {
       titleSuffix: "· SyberInfo Admin",
     },
   },
-  secret: process.env.PAYLOAD_SECRET || "CHANGE_ME_IN_PRODUCTION",
+  // Restrict cookie-based auth + API to known origins.
+  cors: trustedOrigins,
+  csrf: trustedOrigins,
+  secret: PAYLOAD_SECRET,
+  email,
   typescript: {
     outputFile: path.resolve(dirname, "src/payload-types.ts"),
   },
@@ -52,8 +163,18 @@ export default buildConfig({
   collections: [
     {
       slug: "users",
-      auth: true,
+      auth: {
+        maxLoginAttempts: 5,
+        lockTime: 10 * 60 * 1000, // 10 minutes
+        tokenExpiration: 60 * 60 * 8, // 8 hours
+      },
       admin: { useAsTitle: "email", group: "Settings" },
+      access: {
+        read: adminOnly,
+        create: adminOnly,
+        update: adminOnly,
+        delete: adminOnly,
+      },
       fields: [
         { name: "name", type: "text" },
       ],
@@ -226,6 +347,55 @@ export default buildConfig({
       ],
     },
     {
+      // Software & cloud licence catalogue shown in the client portal.
+      slug: "software",
+      labels: { singular: "Software product", plural: "Software & Licences" },
+      admin: {
+        useAsTitle: "name",
+        group: "Catalog",
+        defaultColumns: ["name", "brand", "category", "active"],
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      fields: [
+        { name: "name", type: "text", required: true, admin: { description: "e.g. Microsoft 365" } },
+        { name: "brand", type: "text", admin: { description: "Vendor, e.g. Microsoft" } },
+        {
+          name: "category",
+          type: "select",
+          defaultValue: "Productivity",
+          options: ["Productivity", "Creative", "Communication", "Dev Tools", "Storage", "Security", "Cloud", "Other"].map(
+            (v) => ({ label: v, value: v }),
+          ),
+        },
+        { name: "letter", type: "text", admin: { description: "1–2 char badge, e.g. M" } },
+        { name: "color", type: "text", admin: { description: "Badge colour hex, e.g. #0078D4" } },
+        { name: "tagline", type: "textarea" },
+        { name: "active", type: "checkbox", defaultValue: true },
+        { name: "order", type: "number", defaultValue: 0, admin: { description: "Lower shows first" } },
+        {
+          name: "plans",
+          type: "array",
+          label: "Licence plans",
+          fields: [
+            { name: "name", type: "text", required: true, admin: { description: "e.g. Business Standard" } },
+            { name: "price", type: "number", admin: { description: "AUD ex-GST" } },
+            { name: "unit", type: "text", defaultValue: "per user / month" },
+            { name: "feature", type: "text", admin: { description: "Short inclusions line" } },
+          ],
+        },
+        {
+          name: "addons",
+          type: "array",
+          label: "Add-ons",
+          fields: [
+            { name: "name", type: "text", required: true },
+            { name: "price", type: "number", admin: { description: "AUD ex-GST / month" } },
+            { name: "desc", type: "text" },
+          ],
+        },
+      ],
+    },
+    {
       slug: "testimonials",
       admin: {
         useAsTitle: "name",
@@ -303,7 +473,7 @@ export default buildConfig({
         group: "Enquiries",
       },
       // Submitted by the public contact form; only admins can read/manage.
-      access: { create: () => true },
+      access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "name", type: "text", required: true },
         { name: "email", type: "email", required: true },
@@ -427,7 +597,7 @@ export default buildConfig({
         defaultColumns: ["email", "source", "createdAt"],
         group: "Enquiries",
       },
-      access: { create: () => true },
+      access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "email", type: "email", required: true, unique: true },
         {
@@ -529,7 +699,7 @@ export default buildConfig({
         defaultColumns: ["email", "type", "status", "createdAt"],
         group: "Enquiries",
       },
-      access: { create: () => true },
+      access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "email", type: "email", required: true },
         {
@@ -558,8 +728,27 @@ export default buildConfig({
     {
       slug: "customers",
       labels: { singular: "Customer", plural: "Customers" },
-      auth: true,
+      auth: {
+        maxLoginAttempts: 5,
+        lockTime: 10 * 60 * 1000, // 10 minutes
+        tokenExpiration: 60 * 60 * 24 * 7, // 7 days
+        forgotPassword: {
+          generateEmailSubject: () => "Reset your SyberInfo portal password",
+          generateEmailHTML: (args) => {
+            const token = (args as { token?: string })?.token ?? "";
+            const base = process.env.SITE_URL || "https://syberinfo.com.au";
+            const url = `${base}/portal/reset-password?token=${token}`;
+            return `<p>Hi,</p><p>We received a request to reset your SyberInfo client portal password. Click the link below to choose a new one — it expires in one hour.</p><p><a href="${url}">Reset my password</a></p><p>If you didn't request this, you can safely ignore this email.</p><p>— SyberInfo</p>`;
+          },
+        },
+      },
       admin: { useAsTitle: "email", group: "Billing", defaultColumns: ["email", "name", "company"] },
+      access: {
+        read: adminOrSelf,
+        update: adminOrSelf,
+        create: adminOnly, // public sign-up goes through /api/portal/register (rate-limited)
+        delete: adminOnly,
+      },
       fields: [
         { name: "name", type: "text", required: true },
         { name: "company", type: "text" },
@@ -577,6 +766,7 @@ export default buildConfig({
       slug: "orders",
       labels: { singular: "Order", plural: "Orders" },
       admin: { useAsTitle: "id", group: "Billing", defaultColumns: ["customer", "total", "status", "createdAt"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "customer", type: "relationship", relationTo: "customers" },
         {
@@ -602,6 +792,22 @@ export default buildConfig({
       slug: "subscriptions",
       labels: { singular: "Service", plural: "Services (Subscriptions)" },
       admin: { useAsTitle: "label", group: "Billing", defaultColumns: ["label", "customer", "status", "nextDueDate"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          ({ data, operation }) => {
+            // Default the next due date from the billing cycle on create.
+            if (operation === "create" && !data.nextDueDate) {
+              const d = new Date();
+              const cycle = String(data.billingCycle || "").toLowerCase();
+              if (cycle.includes("year") || cycle.includes("annual")) d.setFullYear(d.getFullYear() + 1);
+              else d.setMonth(d.getMonth() + 1);
+              data.nextDueDate = d.toISOString();
+            }
+            return data;
+          },
+        ],
+      },
       fields: [
         { name: "label", type: "text", required: true, admin: { description: "e.g. Web Hosting — example.com.au" } },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -622,6 +828,30 @@ export default buildConfig({
       slug: "invoices",
       labels: { singular: "Invoice", plural: "Invoices" },
       admin: { useAsTitle: "number", group: "Billing", defaultColumns: ["number", "customer", "total", "status", "dueDate"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          async ({ data, operation, req }) => {
+            // Compute subtotal / GST / total from line items automatically.
+            if (Array.isArray(data.items)) {
+              const subtotal = (data.items as { amount?: number }[]).reduce(
+                (s, it) => s + (Number(it.amount) || 0),
+                0,
+              );
+              data.subtotal = Math.round(subtotal * 100) / 100;
+              data.tax = Math.round(subtotal * 0.1 * 100) / 100; // 10% GST
+              data.total = Math.round((subtotal + data.tax) * 100) / 100;
+            }
+            // Auto-generate a sequential invoice number on create.
+            if (operation === "create" && !data.number) {
+              const year = new Date().getFullYear();
+              const { totalDocs } = await req.payload.count({ collection: "invoices" });
+              data.number = `INV-${year}-${String(totalDocs + 1).padStart(4, "0")}`;
+            }
+            return data;
+          },
+        ],
+      },
       fields: [
         { name: "number", type: "text", required: true, unique: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -651,6 +881,7 @@ export default buildConfig({
       slug: "transactions",
       labels: { singular: "Transaction", plural: "Transactions" },
       admin: { useAsTitle: "reference", group: "Billing", defaultColumns: ["reference", "customer", "amount", "status"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "reference", type: "text" },
         { name: "invoice", type: "relationship", relationTo: "invoices" },
@@ -669,6 +900,7 @@ export default buildConfig({
       slug: "client-domains",
       labels: { singular: "Domain", plural: "Domains" },
       admin: { useAsTitle: "domain", group: "Billing", defaultColumns: ["domain", "customer", "expiryDate", "status"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "domain", type: "text", required: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -688,6 +920,7 @@ export default buildConfig({
       slug: "tickets",
       labels: { singular: "Ticket", plural: "Support Tickets" },
       admin: { useAsTitle: "subject", group: "Billing", defaultColumns: ["subject", "customer", "status", "priority"] },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "subject", type: "text", required: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -723,6 +956,7 @@ export default buildConfig({
       slug: "coupons",
       labels: { singular: "Coupon", plural: "Coupons" },
       admin: { useAsTitle: "code", group: "Billing", defaultColumns: ["code", "type", "value", "active"] },
+      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
       fields: [
         { name: "code", type: "text", required: true, unique: true },
         {
@@ -772,6 +1006,7 @@ export default buildConfig({
       slug: "billing-settings",
       label: "Billing Settings",
       admin: { group: "Billing" },
+      access: { read: adminOnly, update: adminOnly },
       fields: [
         { name: "companyLegalName", type: "text", defaultValue: "SyberInfo" },
         { name: "abn", type: "text" },
@@ -789,18 +1024,22 @@ export default buildConfig({
     // Loaded dynamically so the Payload CLI (migrations/types) doesn't need to
     // resolve app source when it loads this config.
     const {
-      services: seedServices,
       products: seedProducts,
-      testimonials: seedTestimonials,
-      posts: seedPosts,
       plans: seedPlans,
-      partners: seedPartners,
       generalFaqs: seedFaqs,
       helpArticles: seedHelp,
-      projects: seedProjects,
-      stats: seedStats,
       steps: seedSteps,
     } = await import("@/lib/data");
+    // Managed-IT content is the source of truth for these collections.
+    const {
+      services: seedServices,
+      testimonials: seedTestimonials,
+      posts: seedPosts,
+      partners: seedPartners,
+      projects: seedProjects,
+      stats: seedStats,
+    } = await import("@/lib/it-data");
+    const { software: seedSoftware } = await import("@/lib/portal-data");
 
     const { totalDocs: serviceCount } = await payload.count({
       collection: "services",
@@ -817,7 +1056,7 @@ export default buildConfig({
             description: s.description,
             overview: s.overview,
             icon: s.icon,
-            accent: s.accent as (typeof ACCENTS)[number],
+            accent: ACCENTS[0],
             features: s.features.map((feature) => ({ feature })),
             benefits: s.benefits.map((benefit) => ({ benefit })),
             sections: s.sections.map((sec) => ({
@@ -883,6 +1122,30 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedTestimonials.length} testimonials`);
+    }
+
+    const { totalDocs: softwareCount } = await payload.count({ collection: "software" });
+    if (softwareCount === 0) {
+      for (let i = 0; i < seedSoftware.length; i++) {
+        const w = seedSoftware[i];
+        await payload.create({
+          collection: "software",
+          data: {
+            name: w.name,
+            brand: w.brand,
+            category: w.category as
+              | "Productivity" | "Creative" | "Communication" | "Dev Tools" | "Storage" | "Security" | "Cloud" | "Other",
+            letter: w.letter,
+            color: w.color,
+            tagline: w.tagline,
+            active: true,
+            order: i,
+            plans: w.plans.map((p) => ({ name: p.name, price: p.priceNum, unit: "per user / month", feature: p.feat })),
+            addons: (w.addons || []).map((a) => ({ name: a.name, price: a.priceNum, desc: a.desc })),
+          },
+        });
+      }
+      payload.logger.info(`Seeded ${seedSoftware.length} software products`);
     }
 
     const { totalDocs: postCount } = await payload.count({ collection: "posts" });

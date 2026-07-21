@@ -1,82 +1,61 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/lib/site";
-import {
-  getServices,
-  getProducts,
-  getPosts,
-  getHelpArticles,
-} from "@/lib/content";
+import { getServices, getPosts } from "@/lib/content";
+import { caseStudies } from "@/lib/it-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const staticRoutes = [
-    "",
-    "/services",
-    "/products",
-    "/pricing",
-    "/work",
-    "/blog",
-    "/help",
-    "/faq",
-    "/find-my-plan",
-    "/seo-audit",
-    "/about",
-    "/contact",
-    "/privacy",
-    "/terms",
-    "/acceptable-use",
-    "/refund-policy",
-    "/data-request",
-  ].map((path) => ({
-    url: `${site.url}${path}`,
+  const staticRoutes: {
+    path: string;
+    priority: number;
+    freq: MetadataRoute.Sitemap[number]["changeFrequency"];
+  }[] = [
+    { path: "", priority: 1, freq: "weekly" },
+    { path: "/services", priority: 0.9, freq: "monthly" },
+    { path: "/work", priority: 0.8, freq: "monthly" },
+    { path: "/blog", priority: 0.8, freq: "weekly" },
+    { path: "/about", priority: 0.6, freq: "monthly" },
+    { path: "/careers", priority: 0.5, freq: "monthly" },
+    { path: "/contact", priority: 0.7, freq: "yearly" },
+    { path: "/book", priority: 0.8, freq: "yearly" },
+    { path: "/status", priority: 0.4, freq: "daily" },
+    { path: "/essential-eight", priority: 0.7, freq: "monthly" },
+    { path: "/privacy", priority: 0.2, freq: "yearly" },
+    { path: "/terms", priority: 0.2, freq: "yearly" },
+  ];
+
+  const base: MetadataRoute.Sitemap = staticRoutes.map((r) => ({
+    url: `${site.url}${r.path}`,
     lastModified: now,
-    changeFrequency: "monthly" as const,
-    priority: path === "" ? 1 : 0.8,
+    changeFrequency: r.freq,
+    priority: r.priority,
   }));
 
-  const [services, products, posts, help] = await Promise.all([
-    getServices(),
-    getProducts(),
-    getPosts(),
-    getHelpArticles(),
-  ]);
+  const [services, posts] = await Promise.all([getServices(), getPosts()]);
 
-  const serviceRoutes = services.map((s) => ({
+  const serviceRoutes: MetadataRoute.Sitemap = services.map((s) => ({
     url: `${site.url}/services/${s.slug}`,
     lastModified: now,
-    changeFrequency: "monthly" as const,
+    changeFrequency: "monthly",
     priority: 0.7,
   }));
 
-  const productRoutes = products.map((p) => ({
-    url: `${site.url}/products/${p.slug}`,
+  const workRoutes: MetadataRoute.Sitemap = caseStudies.map((c) => ({
+    url: `${site.url}/work/${c.slug}`,
     lastModified: now,
-    changeFrequency: "monthly" as const,
-    priority: 0.7,
-  }));
-
-  const postRoutes = posts.map((p) => ({
-    url: `${site.url}/blog/${p.slug}`,
-    lastModified: p.date ? new Date(p.date) : now,
-    changeFrequency: "monthly" as const,
+    changeFrequency: "yearly",
     priority: 0.6,
   }));
 
-  const helpRoutes = help.map((h) => ({
-    url: `${site.url}/help/${h.slug}`,
-    lastModified: now,
-    changeFrequency: "monthly" as const,
-    priority: 0.5,
+  const postRoutes: MetadataRoute.Sitemap = posts.map((p) => ({
+    url: `${site.url}/blog/${p.slug}`,
+    lastModified: p.date ? new Date(p.date) : now,
+    changeFrequency: "yearly",
+    priority: 0.6,
   }));
 
-  return [
-    ...staticRoutes,
-    ...serviceRoutes,
-    ...productRoutes,
-    ...postRoutes,
-    ...helpRoutes,
-  ];
+  return [...base, ...serviceRoutes, ...workRoutes, ...postRoutes];
 }
