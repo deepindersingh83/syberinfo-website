@@ -543,9 +543,27 @@ export interface Post {
    */
   readMins?: number | null;
   /**
-   * Article body. Separate paragraphs with a blank line.
+   * Plain-text fallback body. Separate paragraphs with a blank line.
    */
   body: string;
+  /**
+   * Rich formatted article (headings, lists, links, inline images). When set, it replaces the plain body on the site.
+   */
+  richBody?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   /**
    * Optional search / social overrides. Leave blank to use the page defaults.
    */
@@ -1486,6 +1504,7 @@ export interface PostsSelect<T extends boolean = true> {
   date?: T;
   readMins?: T;
   body?: T;
+  richBody?: T;
   seo?:
     | T
     | {

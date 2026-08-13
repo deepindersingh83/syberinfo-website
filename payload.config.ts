@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { buildConfig, type Access, type EmailAdapter, type Field } from "payload";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
+import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import sharp from "sharp";
 
 import { migrations } from "./src/migrations";
@@ -167,6 +168,9 @@ export default buildConfig({
   csrf: trustedOrigins,
   secret: PAYLOAD_SECRET,
   email,
+  // Lexical rich-text editor (used by the optional richBody fields for
+  // formatted copy + inline images). Default feature set includes uploads.
+  editor: lexicalEditor(),
   typescript: {
     outputFile: path.resolve(dirname, "src/payload-types.ts"),
   },
@@ -484,7 +488,14 @@ export default buildConfig({
           name: "body",
           type: "textarea",
           required: true,
-          admin: { description: "Article body. Separate paragraphs with a blank line." },
+          admin: { description: "Plain-text fallback body. Separate paragraphs with a blank line." },
+        },
+        {
+          name: "richBody",
+          type: "richText",
+          admin: {
+            description: "Rich formatted article (headings, lists, links, inline images). When set, it replaces the plain body on the site.",
+          },
         },
         seoGroup,
       ],
