@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Aurora, ButtonLink } from "@/components/ui";
 import JsonLd, { breadcrumbJsonLd } from "@/components/JsonLd";
 import { getPost, getPosts } from "@/lib/content";
+import { getSeoOverride, applySeo } from "@/lib/seo";
 import { site, ogImage } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) return { title: "Article not found" };
-  return {
+  const base: Metadata = {
     title: post.title,
     description: post.excerpt,
     alternates: { canonical: `${site.url}/blog/${post.slug}` },
@@ -37,6 +38,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image", images: [ogImage(post.title, "Insights")] },
   };
+  return applySeo(base, await getSeoOverride("posts", slug));
 }
 
 export default async function PostPage({ params }: Params) {

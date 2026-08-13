@@ -156,7 +156,7 @@ export default buildConfig({
     user: "users",
     theme: "dark",
     components: {
-      beforeDashboard: ["@/components/admin/DashboardStats#default"],
+      beforeDashboard: ["@/components/admin/DashboardStats#default", "@/components/admin/AhrefsPanel#default"],
     },
     meta: {
       titleSuffix: "· SyberInfo Admin",
