@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import PageHeader from "@/components/PageHeader";
+import StatusSubscribe from "@/components/StatusSubscribe";
 import { getSystemStatus, componentLabel, type ComponentStatus } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
@@ -106,6 +107,11 @@ export default async function StatusPage() {
             );
           })}
         </div>
+      </section>
+
+      {/* Subscribe */}
+      <section className="relative z-[1] mx-auto max-w-[1240px] px-5 py-4 sm:px-10">
+        <StatusSubscribe />
       </section>
 
       {/* Past incidents */}

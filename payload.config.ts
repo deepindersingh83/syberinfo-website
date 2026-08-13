@@ -821,6 +821,41 @@ export default buildConfig({
         create: adminOnly, // public sign-up goes through /api/portal/register (rate-limited)
         delete: adminOnly,
       },
+      hooks: {
+        afterChange: [
+          async ({ doc, operation, req }) => {
+            // Kick off a standard onboarding checklist for every new client.
+            if (operation !== "create") return;
+            try {
+              const existing = await req.payload.count({
+                collection: "onboarding",
+                where: { customer: { equals: doc.id } },
+              });
+              if (existing.totalDocs > 0) return;
+              const STEPS = [
+                "Welcome call & kickoff scheduled",
+                "Documentation & asset inventory collected",
+                "Monitoring & RMM agents deployed",
+                "Security baseline (Essential Eight) applied",
+                "Backups configured & verified",
+                "Portal access & billing set up",
+                "30-day review booked",
+              ];
+              await req.payload.create({
+                collection: "onboarding",
+                overrideAccess: true,
+                data: {
+                  customer: doc.id,
+                  status: "active",
+                  steps: STEPS.map((label) => ({ label, done: false })),
+                },
+              });
+            } catch {
+              /* onboarding is non-critical — never block customer creation */
+            }
+          },
+        ],
+      },
       fields: [
         { name: "name", type: "text", required: true },
         { name: "company", type: "text" },
@@ -1244,6 +1279,40 @@ export default buildConfig({
             return data;
           },
         ],
+        afterChange: [
+          async ({ doc, previousDoc, operation, req }) => {
+            // Email status subscribers on a new incident or a status change.
+            const statusChanged = operation === "create" || previousDoc?.status !== doc.status;
+            if (!statusChanged) return;
+            try {
+              const subs = await req.payload.find({
+                collection: "status-subscribers",
+                where: { confirmed: { not_equals: false } },
+                limit: 5000,
+                depth: 0,
+                overrideAccess: true,
+              });
+              if (!subs.docs.length) return;
+              const base = process.env.SITE_URL || "https://syberinfo.com.au";
+              const verb = operation === "create" ? "New" : "Update";
+              const latest = Array.isArray(doc.updates) && doc.updates.length
+                ? (doc.updates[doc.updates.length - 1] as { body?: string }).body
+                : "";
+              for (const sub of subs.docs as { email?: string; token?: string }[]) {
+                if (!sub.email) continue;
+                await req.payload.sendEmail({
+                  to: sub.email,
+                  subject: `[SyberInfo status] ${verb}: ${doc.title} — ${doc.status}`,
+                  html: `<p><strong>${doc.title}</strong></p><p>Severity: ${doc.severity} · Status: <strong>${doc.status}</strong></p>${
+                    latest ? `<p>${String(latest).replace(/</g, "&lt;")}</p>` : ""
+                  }<p><a href="${base}/status">View the status page</a></p><p style="color:#888;font-size:12px"><a href="${base}/api/status/unsubscribe?token=${sub.token || ""}">Unsubscribe</a></p>`,
+                });
+              }
+            } catch {
+              /* notifications are best-effort */
+            }
+          },
+        ],
       },
       fields: [
         { name: "title", type: "text", required: true },
@@ -1293,6 +1362,52 @@ export default buildConfig({
         },
         { name: "startedAt", type: "date", admin: { readOnly: true } },
         { name: "resolvedAt", type: "date", admin: { readOnly: true } },
+      ],
+    },
+    {
+      slug: "onboarding",
+      labels: { singular: "Onboarding", plural: "Onboarding" },
+      admin: {
+        useAsTitle: "id",
+        group: "Billing",
+        defaultColumns: ["customer", "status", "updatedAt"],
+        description: "New-client onboarding checklists. Auto-created when a customer is added.",
+      },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      fields: [
+        { name: "customer", type: "relationship", relationTo: "customers" },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "active",
+          options: ["active", "complete"].map((v) => ({ label: v, value: v })),
+        },
+        {
+          name: "steps",
+          type: "array",
+          fields: [
+            { name: "label", type: "text", required: true },
+            { name: "done", type: "checkbox", defaultValue: false },
+            { name: "note", type: "text" },
+          ],
+        },
+      ],
+    },
+    {
+      slug: "status-subscribers",
+      labels: { singular: "Status Subscriber", plural: "Status — Subscribers" },
+      admin: {
+        useAsTitle: "email",
+        group: "Content",
+        defaultColumns: ["email", "confirmed", "createdAt"],
+        description: "People subscribed to incident/maintenance email alerts.",
+      },
+      // Public create goes through the rate-limited /api/status/subscribe route.
+      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      fields: [
+        { name: "email", type: "email", required: true, unique: true },
+        { name: "confirmed", type: "checkbox", defaultValue: true },
+        { name: "token", type: "text", admin: { readOnly: true, description: "Unsubscribe token" } },
       ],
     },
     {
