@@ -91,6 +91,7 @@ export interface Config {
     'client-domains': ClientDomain;
     tickets: Ticket;
     coupons: Coupon;
+    redirects: Redirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -121,6 +122,7 @@ export interface Config {
     'client-domains': ClientDomainsSelect<false> | ClientDomainsSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
     coupons: CouponsSelect<false> | CouponsSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -302,8 +304,78 @@ export interface Service {
    * Lower numbers show first
    */
   order?: number | null;
+  /**
+   * Optional search / social overrides. Leave blank to use the page defaults.
+   */
+  seo?: {
+    /**
+     * Overrides the <title> (≤ 60 chars ideal)
+     */
+    metaTitle?: string | null;
+    /**
+     * Overrides the meta description (≤ 155 chars ideal)
+     */
+    metaDescription?: string | null;
+    /**
+     * Social share image (og:image)
+     */
+    ogImage?: (number | null) | Media;
+    /**
+     * Absolute canonical URL, if different from this page
+     */
+    canonical?: string | null;
+    /**
+     * Hide this page from search engines
+     */
+    noindex?: boolean | null;
+  };
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  alt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    hero?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -468,53 +540,33 @@ export interface Post {
    * Article body. Separate paragraphs with a blank line.
    */
   body: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  alt?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    thumbnail?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    hero?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
+  /**
+   * Optional search / social overrides. Leave blank to use the page defaults.
+   */
+  seo?: {
+    /**
+     * Overrides the <title> (≤ 60 chars ideal)
+     */
+    metaTitle?: string | null;
+    /**
+     * Overrides the meta description (≤ 155 chars ideal)
+     */
+    metaDescription?: string | null;
+    /**
+     * Social share image (og:image)
+     */
+    ogImage?: (number | null) | Media;
+    /**
+     * Absolute canonical URL, if different from this page
+     */
+    canonical?: string | null;
+    /**
+     * Hide this page from search engines
+     */
+    noindex?: boolean | null;
   };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -888,6 +940,30 @@ export interface Coupon {
   createdAt: string;
 }
 /**
+ * 301/302 redirects enforced site-wide. Protects SEO when URLs change.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: number;
+  /**
+   * Source path, e.g. /old-page (leading slash, no domain)
+   */
+  from: string;
+  /**
+   * Target path or absolute URL, e.g. /new-page or https://…
+   */
+  to: string;
+  /**
+   * On = 301 (permanent). Off = 302 (temporary).
+   */
+  permanent?: boolean | null;
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -1002,6 +1078,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'coupons';
         value: number | Coupon;
+      } | null)
+    | ({
+        relationTo: 'redirects';
+        value: number | Redirect;
       } | null);
   globalSlug?: string | null;
   user:
@@ -1134,6 +1214,15 @@ export interface ServicesSelect<T extends boolean = true> {
         id?: T;
       };
   order?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        canonical?: T;
+        noindex?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1234,6 +1323,15 @@ export interface PostsSelect<T extends boolean = true> {
   date?: T;
   readMins?: T;
   body?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        canonical?: T;
+        noindex?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1569,6 +1667,18 @@ export interface CouponsSelect<T extends boolean = true> {
   code?: T;
   type?: T;
   value?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  to?: T;
+  permanent?: T;
   active?: T;
   updatedAt?: T;
   createdAt?: T;

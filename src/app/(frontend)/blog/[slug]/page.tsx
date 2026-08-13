@@ -3,8 +3,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Aurora, ButtonLink } from "@/components/ui";
+import JsonLd, { breadcrumbJsonLd } from "@/components/JsonLd";
 import { getPost, getPosts } from "@/lib/content";
-import { site } from "@/lib/site";
+import { site, ogImage } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -26,12 +27,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: post.title,
     description: post.excerpt,
+    alternates: { canonical: `${site.url}/blog/${post.slug}` },
     openGraph: {
       type: "article",
       title: `${post.title} · SyberInfo`,
       description: post.excerpt,
       publishedTime: post.date,
+      images: [{ url: ogImage(post.title, "Insights"), width: 1200, height: 630 }],
     },
+    twitter: { card: "summary_large_image", images: [ogImage(post.title, "Insights")] },
   };
 }
 
@@ -60,6 +64,13 @@ export default async function PostPage({ params }: Params) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", url: site.url },
+          { name: "Insights", url: `${site.url}/blog` },
+          { name: post.title, url: `${site.url}/blog/${post.slug}` },
+        ])}
       />
 
       <article className="mx-auto max-w-3xl px-5">

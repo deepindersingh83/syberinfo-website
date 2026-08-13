@@ -8,7 +8,7 @@ import InteractiveBackground from "@/components/InteractiveBackground";
 import ScrollToTop from "@/components/ScrollToTop";
 import MobileCTA from "@/components/MobileCTA";
 import CookieConsent from "@/components/CookieConsent";
-import { site } from "@/lib/site";
+import { site, ogImage } from "@/lib/site";
 
 const display = Bricolage_Grotesque({
   variable: "--font-display",
@@ -56,11 +56,13 @@ export const metadata: Metadata = {
     siteName: site.name,
     title: `${site.name} — IT that quietly runs while you build`,
     description: site.description,
+    images: [{ url: ogImage("IT that quietly runs while you build", "SyberInfo"), width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: `${site.name} — IT that quietly runs while you build`,
     description: site.description,
+    images: [ogImage("IT that quietly runs while you build", "SyberInfo")],
   },
   alternates: { canonical: site.url },
 };

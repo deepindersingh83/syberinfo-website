@@ -21,7 +21,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	FOREIGN KEY (\`subscription_id\`) REFERENCES \`subscriptions\`(\`id\`) ON UPDATE no action ON DELETE set null
   );
   `)
-  await db.run(sql`INSERT INTO \`__new_invoices\`("id", "number", "customer_id", "subscription_id", "subtotal", "tax", "total", "status", "due_date", "paid_date", "reminders_sent", "last_reminder_at", "updated_at", "created_at") SELECT "id", "number", "customer_id", "subscription_id", "subtotal", "tax", "total", "status", "due_date", "paid_date", "reminders_sent", "last_reminder_at", "updated_at", "created_at" FROM \`invoices\`;`)
+  // Copy only the pre-existing columns; the three new columns (subscription_id,
+  // reminders_sent, last_reminder_at) take their defaults on existing rows.
+  await db.run(sql`INSERT INTO \`__new_invoices\`("id", "number", "customer_id", "subtotal", "tax", "total", "status", "due_date", "paid_date", "updated_at", "created_at") SELECT "id", "number", "customer_id", "subtotal", "tax", "total", "status", "due_date", "paid_date", "updated_at", "created_at" FROM \`invoices\`;`)
   await db.run(sql`DROP TABLE \`invoices\`;`)
   await db.run(sql`ALTER TABLE \`__new_invoices\` RENAME TO \`invoices\`;`)
   await db.run(sql`PRAGMA foreign_keys=ON;`)
