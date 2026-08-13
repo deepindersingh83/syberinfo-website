@@ -34,6 +34,18 @@ export const site = {
   },
 } as const;
 
+/**
+ * URL for the branded, on-demand Open Graph card (see /api/og). Pass a page
+ * title (and optional kicker) so links unfurl with a relevant image.
+ */
+export function ogImage(title?: string, kicker?: string): string {
+  const q = new URLSearchParams();
+  if (title) q.set("title", title);
+  if (kicker) q.set("kicker", kicker);
+  const qs = q.toString();
+  return `${site.url}/api/og${qs ? `?${qs}` : ""}`;
+}
+
 export const nav = [
   { label: "Services", href: "/services" },
   { label: "Case studies", href: "/work" },

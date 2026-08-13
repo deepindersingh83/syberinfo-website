@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
 import JsonLd, { faqJsonLd, breadcrumbJsonLd } from "@/components/JsonLd";
 import { getService, getServices } from "@/lib/content";
-import { site } from "@/lib/site";
+import { site, ogImage } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +17,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: service.title,
     description: service.overview || service.description,
+    alternates: { canonical: `${site.url}/services/${service.slug}` },
     openGraph: {
       title: `${service.title} · SyberInfo`,
       description: service.overview || service.description,
+      images: [{ url: ogImage(service.title, "Services"), width: 1200, height: 630 }],
     },
+    twitter: { card: "summary_large_image", images: [ogImage(service.title, "Services")] },
   };
 }
 

@@ -1,7 +1,7 @@
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
-import { buildConfig, type Access, type EmailAdapter } from "payload";
+import { buildConfig, type Access, type EmailAdapter, type Field } from "payload";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
 import sharp from "sharp";
 
@@ -127,6 +127,29 @@ const trustedOrigins = [
   process.env.SITE_URL || "https://syberinfo.com.au",
   ...(process.env.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
 ];
+
+/**
+ * Reusable per-page SEO override group. Editors can set a custom title /
+ * description / social image / canonical, or flag a page noindex. All optional
+ * — pages fall back to sensible auto-generated metadata when these are blank.
+ */
+const seoGroup: Field = {
+  name: "seo",
+  type: "group",
+  label: "SEO",
+  admin: { description: "Optional search / social overrides. Leave blank to use the page defaults." },
+  fields: [
+    { name: "metaTitle", type: "text" as const, admin: { description: "Overrides the <title> (≤ 60 chars ideal)" } },
+    {
+      name: "metaDescription",
+      type: "textarea" as const,
+      admin: { description: "Overrides the meta description (≤ 155 chars ideal)" },
+    },
+    { name: "ogImage", type: "upload" as const, relationTo: "media", admin: { description: "Social share image (og:image)" } },
+    { name: "canonical", type: "text" as const, admin: { description: "Absolute canonical URL, if different from this page" } },
+    { name: "noindex", type: "checkbox" as const, defaultValue: false, admin: { description: "Hide this page from search engines" } },
+  ],
+};
 
 export default buildConfig({
   admin: {
@@ -276,6 +299,7 @@ export default buildConfig({
           defaultValue: 0,
           admin: { description: "Lower numbers show first" },
         },
+        seoGroup,
       ],
     },
     {
@@ -462,6 +486,7 @@ export default buildConfig({
           required: true,
           admin: { description: "Article body. Separate paragraphs with a blank line." },
         },
+        seoGroup,
       ],
     },
     {
@@ -853,8 +878,14 @@ export default buildConfig({
         ],
       },
       fields: [
-        { name: "number", type: "text", required: true, unique: true },
+        { name: "number", type: "text", unique: true, admin: { description: "Auto-generated on create if left blank" } },
         { name: "customer", type: "relationship", relationTo: "customers" },
+        {
+          name: "subscription",
+          type: "relationship",
+          relationTo: "subscriptions",
+          admin: { description: "Set automatically for renewal invoices; links dunning back to the service" },
+        },
         {
           name: "items",
           type: "array",
@@ -875,6 +906,13 @@ export default buildConfig({
         },
         { name: "dueDate", type: "date" },
         { name: "paidDate", type: "date" },
+        {
+          name: "remindersSent",
+          type: "number",
+          defaultValue: 0,
+          admin: { description: "Dunning reminders emailed so far", readOnly: true },
+        },
+        { name: "lastReminderAt", type: "date", admin: { readOnly: true } },
       ],
     },
     {
@@ -969,6 +1007,39 @@ export default buildConfig({
           ],
         },
         { name: "value", type: "number", required: true },
+        { name: "active", type: "checkbox", defaultValue: true },
+      ],
+    },
+    {
+      slug: "redirects",
+      labels: { singular: "Redirect", plural: "Redirects" },
+      admin: {
+        useAsTitle: "from",
+        group: "Content",
+        defaultColumns: ["from", "to", "permanent", "active"],
+        description: "301/302 redirects enforced site-wide. Protects SEO when URLs change.",
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      fields: [
+        {
+          name: "from",
+          type: "text",
+          required: true,
+          unique: true,
+          admin: { description: "Source path, e.g. /old-page (leading slash, no domain)" },
+        },
+        {
+          name: "to",
+          type: "text",
+          required: true,
+          admin: { description: "Target path or absolute URL, e.g. /new-page or https://…" },
+        },
+        {
+          name: "permanent",
+          type: "checkbox",
+          defaultValue: true,
+          admin: { description: "On = 301 (permanent). Off = 302 (temporary)." },
+        },
         { name: "active", type: "checkbox", defaultValue: true },
       ],
     },
