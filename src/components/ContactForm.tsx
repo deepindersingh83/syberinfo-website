@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { readAttribution } from "@/lib/attribution";
 import { services } from "@/lib/it-data";
 import Turnstile from "@/components/Turnstile";
 
@@ -23,7 +24,7 @@ export default function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, turnstileToken: token }),
+        body: JSON.stringify({ ...data, turnstileToken: token, attribution: readAttribution() }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

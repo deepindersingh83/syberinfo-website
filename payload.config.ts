@@ -499,6 +499,25 @@ export default buildConfig({
       },
       // Submitted by the public contact form; only admins can read/manage.
       access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          ({ data, operation }) => {
+            // Simple lead score (0–100) from the signals we have, on create.
+            if (operation === "create" && (data.score == null || data.score === 0)) {
+              let score = 20;
+              if (data.phone && String(data.phone).replace(/\D/g, "").length >= 8) score += 20;
+              if (data.service && String(data.service) !== "—") score += 20;
+              const len = String(data.message || "").length;
+              if (len > 240) score += 25;
+              else if (len > 80) score += 15;
+              const high = /security|cyber|ransom|migrat|compliance|essential eight|managed/i;
+              if (high.test(String(data.message || "") + " " + String(data.service || ""))) score += 15;
+              data.score = Math.min(100, score);
+            }
+            return data;
+          },
+        ],
+      },
       fields: [
         { name: "name", type: "text", required: true },
         { name: "email", type: "email", required: true },
@@ -511,9 +530,26 @@ export default buildConfig({
           defaultValue: "new",
           options: [
             { label: "New", value: "new" },
-            { label: "In progress", value: "in-progress" },
+            { label: "Qualified", value: "qualified" },
+            { label: "Proposal sent", value: "proposal" },
             { label: "Won", value: "won" },
-            { label: "Closed", value: "closed" },
+            { label: "Lost", value: "lost" },
+          ],
+        },
+        { name: "owner", type: "relationship", relationTo: "users", admin: { description: "Salesperson responsible" } },
+        { name: "score", type: "number", admin: { description: "Auto-scored 0–100 on submit", readOnly: true } },
+        { name: "value", type: "number", admin: { description: "Estimated deal value, AUD" } },
+        {
+          name: "attribution",
+          type: "group",
+          label: "Attribution",
+          admin: { description: "Where this lead came from (captured automatically)" },
+          fields: [
+            { name: "source", type: "text", admin: { description: "utm_source" } },
+            { name: "medium", type: "text", admin: { description: "utm_medium" } },
+            { name: "campaign", type: "text", admin: { description: "utm_campaign" } },
+            { name: "referrer", type: "text" },
+            { name: "landingPage", type: "text" },
           ],
         },
       ],
@@ -957,11 +993,76 @@ export default buildConfig({
     {
       slug: "tickets",
       labels: { singular: "Ticket", plural: "Support Tickets" },
-      admin: { useAsTitle: "subject", group: "Billing", defaultColumns: ["subject", "customer", "status", "priority"] },
+      admin: {
+        useAsTitle: "subject",
+        group: "Billing",
+        defaultColumns: ["subject", "customer", "status", "priority", "slaDueAt"],
+      },
       access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          ({ data, operation }) => {
+            // First-response SLA target (hours) by priority.
+            const SLA_HOURS: Record<string, number> = { high: 4, medium: 8, low: 24 };
+            if (operation === "create") {
+              const hrs = SLA_HOURS[String(data.priority || "medium")] ?? 8;
+              const due = new Date();
+              due.setHours(due.getHours() + hrs);
+              if (!data.slaDueAt) data.slaDueAt = due.toISOString();
+            }
+            // Stamp first response the first time staff answers.
+            if (data.status === "answered" && !data.firstRespondedAt) {
+              data.firstRespondedAt = new Date().toISOString();
+            }
+            // Stamp resolution when closed (clear if reopened).
+            if (data.status === "closed" && !data.resolvedAt) {
+              data.resolvedAt = new Date().toISOString();
+            } else if (data.status && data.status !== "closed") {
+              data.resolvedAt = null;
+            }
+            return data;
+          },
+        ],
+        afterChange: [
+          async ({ doc, previousDoc, req, operation }) => {
+            // Email the customer when the team adds a new staff reply.
+            if (operation !== "update") return;
+            const msgs = Array.isArray(doc.messages) ? doc.messages : [];
+            const prevMsgs = Array.isArray(previousDoc?.messages) ? previousDoc.messages : [];
+            if (msgs.length <= prevMsgs.length) return;
+            const last = msgs[msgs.length - 1] as { staff?: boolean; message?: string };
+            if (!last?.staff) return;
+            try {
+              const custRef = doc.customer;
+              const cust =
+                custRef && typeof custRef === "object"
+                  ? custRef
+                  : await req.payload.findByID({ collection: "customers", id: custRef, depth: 0, overrideAccess: true });
+              const email = (cust as { email?: string })?.email;
+              if (!email) return;
+              const base = process.env.SITE_URL || "https://syberinfo.com.au";
+              await req.payload.sendEmail({
+                to: email,
+                subject: `Re: ${doc.subject} — SyberInfo support`,
+                html: `<p>Hi,</p><p>Our team has replied to your support ticket <strong>${doc.subject}</strong>:</p><blockquote>${String(
+                  last.message || "",
+                ).replace(/</g, "&lt;")}</blockquote><p><a href="${base}/portal">View &amp; reply in the client portal</a></p><p>— SyberInfo</p>`,
+              });
+            } catch {
+              /* best-effort notification */
+            }
+          },
+        ],
+      },
       fields: [
         { name: "subject", type: "text", required: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
+        {
+          name: "assignee",
+          type: "relationship",
+          relationTo: "users",
+          admin: { description: "Engineer responsible for this ticket" },
+        },
         {
           name: "department",
           type: "select",
@@ -980,11 +1081,15 @@ export default buildConfig({
           defaultValue: "medium",
           options: ["low", "medium", "high"].map((v) => ({ label: v, value: v })),
         },
+        { name: "slaDueAt", type: "date", admin: { description: "First-response SLA deadline", readOnly: true } },
+        { name: "firstRespondedAt", type: "date", admin: { readOnly: true } },
+        { name: "resolvedAt", type: "date", admin: { readOnly: true } },
         {
           name: "messages",
           type: "array",
           fields: [
             { name: "author", type: "text" },
+            { name: "staff", type: "checkbox", defaultValue: false, admin: { description: "Was this reply from our team?" } },
             { name: "message", type: "textarea", required: true },
           ],
         },
@@ -1008,6 +1113,175 @@ export default buildConfig({
         },
         { name: "value", type: "number", required: true },
         { name: "active", type: "checkbox", defaultValue: true },
+      ],
+    },
+    {
+      slug: "quotes",
+      labels: { singular: "Quote", plural: "Quotes / Proposals" },
+      admin: {
+        useAsTitle: "number",
+        group: "Billing",
+        defaultColumns: ["number", "prospectName", "total", "status", "validUntil"],
+      },
+      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          async ({ data, operation, req }) => {
+            if (Array.isArray(data.items)) {
+              const subtotal = (data.items as { quantity?: number; unitPrice?: number }[]).reduce(
+                (s, it) => s + (Number(it.quantity) || 1) * (Number(it.unitPrice) || 0),
+                0,
+              );
+              data.subtotal = Math.round(subtotal * 100) / 100;
+              data.tax = Math.round(subtotal * 0.1 * 100) / 100;
+              data.total = Math.round((subtotal + data.tax) * 100) / 100;
+            }
+            if (operation === "create") {
+              if (!data.number) {
+                const year = new Date().getFullYear();
+                const { totalDocs } = await req.payload.count({ collection: "quotes" });
+                data.number = `QUO-${year}-${String(totalDocs + 1).padStart(4, "0")}`;
+              }
+              if (!data.acceptToken) data.acceptToken = crypto.randomBytes(24).toString("hex");
+              if (!data.validUntil) {
+                const d = new Date();
+                d.setDate(d.getDate() + 30);
+                data.validUntil = d.toISOString();
+              }
+            }
+            if (data.status === "accepted" && !data.acceptedAt) data.acceptedAt = new Date().toISOString();
+            return data;
+          },
+        ],
+      },
+      fields: [
+        { name: "number", type: "text", unique: true, admin: { description: "Auto-generated" } },
+        { name: "prospectName", type: "text", required: true },
+        { name: "prospectEmail", type: "email", required: true },
+        { name: "customer", type: "relationship", relationTo: "customers", admin: { description: "Link once they're a client" } },
+        { name: "title", type: "text", defaultValue: "Proposal", admin: { description: "e.g. Managed IT proposal" } },
+        { name: "intro", type: "textarea", admin: { description: "Optional summary shown above the line items" } },
+        {
+          name: "items",
+          type: "array",
+          fields: [
+            { name: "description", type: "text", required: true },
+            { name: "quantity", type: "number", defaultValue: 1 },
+            { name: "unitPrice", type: "number", admin: { description: "ex-GST, AUD" } },
+          ],
+        },
+        { name: "subtotal", type: "number", admin: { readOnly: true } },
+        { name: "tax", type: "number", admin: { readOnly: true, description: "GST" } },
+        { name: "total", type: "number", admin: { readOnly: true } },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "draft",
+          options: ["draft", "sent", "accepted", "declined", "expired"].map((v) => ({ label: v, value: v })),
+        },
+        { name: "validUntil", type: "date" },
+        { name: "acceptToken", type: "text", unique: true, admin: { readOnly: true, description: "Used in the public accept link" } },
+        { name: "acceptedAt", type: "date", admin: { readOnly: true } },
+      ],
+    },
+    {
+      slug: "system-components",
+      labels: { singular: "System Component", plural: "Status — Components" },
+      admin: {
+        useAsTitle: "name",
+        group: "Content",
+        defaultColumns: ["name", "status", "order"],
+        description: "Services shown on the public status page.",
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      defaultSort: "order",
+      fields: [
+        { name: "name", type: "text", required: true },
+        { name: "description", type: "text" },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "operational",
+          options: [
+            { label: "Operational", value: "operational" },
+            { label: "Degraded performance", value: "degraded" },
+            { label: "Partial outage", value: "partial" },
+            { label: "Major outage", value: "major" },
+            { label: "Maintenance", value: "maintenance" },
+          ],
+        },
+        { name: "order", type: "number", defaultValue: 0 },
+      ],
+    },
+    {
+      slug: "incidents",
+      labels: { singular: "Incident", plural: "Status — Incidents" },
+      admin: {
+        useAsTitle: "title",
+        group: "Content",
+        defaultColumns: ["title", "severity", "status", "startedAt"],
+        description: "Incidents & maintenance shown on the public status page.",
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      defaultSort: "-startedAt",
+      hooks: {
+        beforeChange: [
+          ({ data, operation }) => {
+            if (operation === "create" && !data.startedAt) data.startedAt = new Date().toISOString();
+            if (data.status === "resolved" && !data.resolvedAt) data.resolvedAt = new Date().toISOString();
+            if (data.status && data.status !== "resolved") data.resolvedAt = null;
+            return data;
+          },
+        ],
+      },
+      fields: [
+        { name: "title", type: "text", required: true },
+        {
+          name: "severity",
+          type: "select",
+          defaultValue: "minor",
+          options: [
+            { label: "Maintenance", value: "maintenance" },
+            { label: "Minor", value: "minor" },
+            { label: "Major", value: "major" },
+            { label: "Critical", value: "critical" },
+          ],
+        },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "investigating",
+          options: [
+            { label: "Investigating", value: "investigating" },
+            { label: "Identified", value: "identified" },
+            { label: "Monitoring", value: "monitoring" },
+            { label: "Resolved", value: "resolved" },
+          ],
+        },
+        {
+          name: "affected",
+          type: "relationship",
+          relationTo: "system-components",
+          hasMany: true,
+          admin: { description: "Components affected by this incident" },
+        },
+        {
+          name: "updates",
+          type: "array",
+          admin: { description: "Timeline of updates, newest last" },
+          fields: [
+            {
+              name: "status",
+              type: "select",
+              defaultValue: "investigating",
+              options: ["investigating", "identified", "monitoring", "resolved"].map((v) => ({ label: v, value: v })),
+            },
+            { name: "body", type: "textarea", required: true },
+            { name: "at", type: "date", admin: { description: "Defaults to now if blank" } },
+          ],
+        },
+        { name: "startedAt", type: "date", admin: { readOnly: true } },
+        { name: "resolvedAt", type: "date", admin: { readOnly: true } },
       ],
     },
     {

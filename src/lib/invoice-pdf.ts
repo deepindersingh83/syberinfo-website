@@ -49,11 +49,20 @@ const aud = (n: number) =>
 const date = (v?: string | null) =>
   v ? new Date(v).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-export function renderInvoicePdf(invoice: InvoiceData, customer: CustomerData, seller: SellerData): Buffer {
+export type DocOptions = { docLabel?: string; numberLabel?: string };
+
+export function renderInvoicePdf(
+  invoice: InvoiceData,
+  customer: CustomerData,
+  seller: SellerData,
+  opts: DocOptions = {},
+): Buffer {
   const p = new PdfPage();
   const L = 48; // left margin
   const R = p.width - 48; // right edge
   const gstReg = seller.gstRegistered !== false;
+  const docLabel = opts.docLabel ?? (gstReg ? "TAX INVOICE" : "INVOICE");
+  const numberLabel = opts.numberLabel ?? "Invoice";
 
   // ---- Header band -------------------------------------------------------
   p.rect(0, 0, p.width, 6, INDIGO);
@@ -69,8 +78,8 @@ export function renderInvoicePdf(invoice: InvoiceData, customer: CustomerData, s
   if (seller.email) p.text(L, sy + 12, seller.email, 9, "H", MUTED);
 
   // ---- Title + meta (right) ---------------------------------------------
-  p.textRight(R, 60, gstReg ? "TAX INVOICE" : "INVOICE", 20, "HB", INK);
-  p.textRight(R, 84, `Invoice  ${invoice.number || "—"}`, 10, "HB", INK);
+  p.textRight(R, 60, docLabel, 20, "HB", INK);
+  p.textRight(R, 84, `${numberLabel}  ${invoice.number || "—"}`, 10, "HB", INK);
   p.textRight(R, 100, `Issued   ${date(invoice.createdAt)}`, 9, "H", MUTED);
   p.textRight(R, 114, `Due      ${date(invoice.dueDate)}`, 9, "H", MUTED);
   const status = String(invoice.status || "unpaid").toUpperCase();

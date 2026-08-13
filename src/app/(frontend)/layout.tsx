@@ -8,6 +8,7 @@ import InteractiveBackground from "@/components/InteractiveBackground";
 import ScrollToTop from "@/components/ScrollToTop";
 import MobileCTA from "@/components/MobileCTA";
 import CookieConsent from "@/components/CookieConsent";
+import Attribution from "@/components/Attribution";
 import { site, ogImage } from "@/lib/site";
 
 const display = Bricolage_Grotesque({
@@ -110,6 +111,7 @@ export default function RootLayout({
         <ScrollToTop />
         <MobileCTA />
         <CookieConsent />
+        <Attribution />
       </body>
     </html>
   );

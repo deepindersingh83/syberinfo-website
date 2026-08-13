@@ -11,11 +11,21 @@ export default async function DashboardStats() {
   let byService: { name: string; mrr: number }[] = [];
   try {
     const payload = await getPayload({ config });
-    const [subs, unpaid, overdue, openTickets, leads, metrics] = await Promise.all([
+    const [subs, unpaid, overdue, openTickets, slaBreached, leads, metrics] = await Promise.all([
       payload.count({ collection: "subscriptions", where: { status: { equals: "active" } } }),
       payload.count({ collection: "invoices", where: { status: { equals: "unpaid" } } }),
       payload.count({ collection: "invoices", where: { status: { equals: "overdue" } } }),
       payload.count({ collection: "tickets", where: { status: { not_equals: "closed" } } }),
+      payload.count({
+        collection: "tickets",
+        where: {
+          and: [
+            { status: { not_equals: "closed" } },
+            { firstRespondedAt: { equals: null } },
+            { slaDueAt: { less_than: new Date().toISOString() } },
+          ],
+        },
+      }),
       payload.count({ collection: "leads" }),
       computeRevenueMetrics(payload),
     ]);
@@ -39,6 +49,12 @@ export default async function DashboardStats() {
         warn: overdue.totalDocs > 0,
       },
       { label: "Open tickets", value: String(openTickets.totalDocs) },
+      {
+        label: "SLA breached",
+        value: String(slaBreached.totalDocs),
+        sub: "awaiting first response",
+        warn: slaBreached.totalDocs > 0,
+      },
       { label: "Total leads", value: String(leads.totalDocs) },
     ];
   } catch {

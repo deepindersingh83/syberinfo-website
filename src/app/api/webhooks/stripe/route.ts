@@ -2,6 +2,7 @@ import { getPayload } from "payload";
 import config from "@payload-config";
 import { verifyWebhook } from "@/lib/stripe";
 import { json } from "@/lib/api";
+import { emitEvent } from "@/lib/events";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
       },
     });
     logger.info("stripe webhook: invoice paid", { invoiceNumber });
+    await emitEvent("invoice.paid", { number: invoiceNumber, amount: amount / 100, customer: invoice.customer });
   } catch (err) {
     logger.error("stripe webhook: processing failed", {
       invoiceNumber,
