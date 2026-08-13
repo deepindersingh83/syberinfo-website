@@ -11,6 +11,7 @@ import * as migration_20260719_184322_software_catalog from './20260719_184322_s
 import * as migration_20260813_151651_billing_dunning from './20260813_151651_billing_dunning';
 import * as migration_20260813_152816_seo_and_redirects from './20260813_152816_seo_and_redirects';
 import * as migration_20260813_181950_service_delivery from './20260813_181950_service_delivery';
+import * as migration_20260813_183200_sales_crm from './20260813_183200_sales_crm';
 
 export const migrations = [
   {
@@ -76,6 +77,11 @@ export const migrations = [
   {
     up: migration_20260813_181950_service_delivery.up,
     down: migration_20260813_181950_service_delivery.down,
-    name: '20260813_181950_service_delivery'
+    name: '20260813_181950_service_delivery',
+  },
+  {
+    up: migration_20260813_183200_sales_crm.up,
+    down: migration_20260813_183200_sales_crm.down,
+    name: '20260813_183200_sales_crm'
   },
 ];

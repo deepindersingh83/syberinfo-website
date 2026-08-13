@@ -461,12 +461,20 @@ export async function saveDataRequest(
   }
 }
 
+export type LeadAttribution = {
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  referrer?: string;
+  landingPage?: string;
+};
 export type LeadInput = {
   name: string;
   email: string;
   phone?: string;
   service?: string;
   message: string;
+  attribution?: LeadAttribution;
 };
 
 /**
@@ -474,10 +482,10 @@ export type LeadInput = {
  * the admin. Returns true on success; callers should not fail the request if
  * this returns false (email delivery is the primary channel).
  */
-export async function saveLead(lead: LeadInput): Promise<boolean> {
+export async function saveLead(lead: LeadInput): Promise<string | number | null> {
   try {
     const payload = await getPayload({ config });
-    await payload.create({
+    const doc = await payload.create({
       collection: "leads",
       data: {
         name: lead.name,
@@ -486,11 +494,12 @@ export async function saveLead(lead: LeadInput): Promise<boolean> {
         service: lead.service,
         message: lead.message,
         status: "new",
+        attribution: lead.attribution,
       },
     });
-    return true;
+    return (doc as { id: string | number }).id;
   } catch (err) {
     logger.error("saveLead failed", { email: lead.email, message: err instanceof Error ? err.message : String(err) });
-    return false;
+    return null;
   }
 }

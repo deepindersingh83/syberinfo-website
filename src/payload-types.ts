@@ -91,6 +91,7 @@ export interface Config {
     'client-domains': ClientDomain;
     tickets: Ticket;
     coupons: Coupon;
+    quotes: Quote;
     'system-components': SystemComponent;
     incidents: Incident;
     redirects: Redirect;
@@ -124,6 +125,7 @@ export interface Config {
     'client-domains': ClientDomainsSelect<false> | ClientDomainsSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
     coupons: CouponsSelect<false> | CouponsSelect<true>;
+    quotes: QuotesSelect<false> | QuotesSelect<true>;
     'system-components': SystemComponentsSelect<false> | SystemComponentsSelect<true>;
     incidents: IncidentsSelect<false> | IncidentsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
@@ -583,7 +585,38 @@ export interface Lead {
   phone?: string | null;
   service?: string | null;
   message: string;
-  status?: ('new' | 'in-progress' | 'won' | 'closed') | null;
+  status?: ('new' | 'qualified' | 'proposal' | 'won' | 'lost') | null;
+  /**
+   * Salesperson responsible
+   */
+  owner?: (number | null) | User;
+  /**
+   * Auto-scored 0–100 on submit
+   */
+  score?: number | null;
+  /**
+   * Estimated deal value, AUD
+   */
+  value?: number | null;
+  /**
+   * Where this lead came from (captured automatically)
+   */
+  attribution?: {
+    /**
+     * utm_source
+     */
+    source?: string | null;
+    /**
+     * utm_medium
+     */
+    medium?: string | null;
+    /**
+     * utm_campaign
+     */
+    campaign?: string | null;
+    referrer?: string | null;
+    landingPage?: string | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -958,6 +991,57 @@ export interface Coupon {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotes".
+ */
+export interface Quote {
+  id: number;
+  /**
+   * Auto-generated
+   */
+  number?: string | null;
+  prospectName: string;
+  prospectEmail: string;
+  /**
+   * Link once they're a client
+   */
+  customer?: (number | null) | Customer;
+  /**
+   * e.g. Managed IT proposal
+   */
+  title?: string | null;
+  /**
+   * Optional summary shown above the line items
+   */
+  intro?: string | null;
+  items?:
+    | {
+        description: string;
+        quantity?: number | null;
+        /**
+         * ex-GST, AUD
+         */
+        unitPrice?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  subtotal?: number | null;
+  /**
+   * GST
+   */
+  tax?: number | null;
+  total?: number | null;
+  status?: ('draft' | 'sent' | 'accepted' | 'declined' | 'expired') | null;
+  validUntil?: string | null;
+  /**
+   * Used in the public accept link
+   */
+  acceptToken?: string | null;
+  acceptedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Services shown on the public status page.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1145,6 +1229,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'coupons';
         value: number | Coupon;
+      } | null)
+    | ({
+        relationTo: 'quotes';
+        value: number | Quote;
       } | null)
     | ({
         relationTo: 'system-components';
@@ -1421,6 +1509,18 @@ export interface LeadsSelect<T extends boolean = true> {
   service?: T;
   message?: T;
   status?: T;
+  owner?: T;
+  score?: T;
+  value?: T;
+  attribution?:
+    | T
+    | {
+        source?: T;
+        medium?: T;
+        campaign?: T;
+        referrer?: T;
+        landingPage?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1748,6 +1848,35 @@ export interface CouponsSelect<T extends boolean = true> {
   type?: T;
   value?: T;
   active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotes_select".
+ */
+export interface QuotesSelect<T extends boolean = true> {
+  number?: T;
+  prospectName?: T;
+  prospectEmail?: T;
+  customer?: T;
+  title?: T;
+  intro?: T;
+  items?:
+    | T
+    | {
+        description?: T;
+        quantity?: T;
+        unitPrice?: T;
+        id?: T;
+      };
+  subtotal?: T;
+  tax?: T;
+  total?: T;
+  status?: T;
+  validUntil?: T;
+  acceptToken?: T;
+  acceptedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

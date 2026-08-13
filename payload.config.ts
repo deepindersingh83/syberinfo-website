@@ -499,6 +499,25 @@ export default buildConfig({
       },
       // Submitted by the public contact form; only admins can read/manage.
       access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          ({ data, operation }) => {
+            // Simple lead score (0–100) from the signals we have, on create.
+            if (operation === "create" && (data.score == null || data.score === 0)) {
+              let score = 20;
+              if (data.phone && String(data.phone).replace(/\D/g, "").length >= 8) score += 20;
+              if (data.service && String(data.service) !== "—") score += 20;
+              const len = String(data.message || "").length;
+              if (len > 240) score += 25;
+              else if (len > 80) score += 15;
+              const high = /security|cyber|ransom|migrat|compliance|essential eight|managed/i;
+              if (high.test(String(data.message || "") + " " + String(data.service || ""))) score += 15;
+              data.score = Math.min(100, score);
+            }
+            return data;
+          },
+        ],
+      },
       fields: [
         { name: "name", type: "text", required: true },
         { name: "email", type: "email", required: true },
@@ -511,9 +530,26 @@ export default buildConfig({
           defaultValue: "new",
           options: [
             { label: "New", value: "new" },
-            { label: "In progress", value: "in-progress" },
+            { label: "Qualified", value: "qualified" },
+            { label: "Proposal sent", value: "proposal" },
             { label: "Won", value: "won" },
-            { label: "Closed", value: "closed" },
+            { label: "Lost", value: "lost" },
+          ],
+        },
+        { name: "owner", type: "relationship", relationTo: "users", admin: { description: "Salesperson responsible" } },
+        { name: "score", type: "number", admin: { description: "Auto-scored 0–100 on submit", readOnly: true } },
+        { name: "value", type: "number", admin: { description: "Estimated deal value, AUD" } },
+        {
+          name: "attribution",
+          type: "group",
+          label: "Attribution",
+          admin: { description: "Where this lead came from (captured automatically)" },
+          fields: [
+            { name: "source", type: "text", admin: { description: "utm_source" } },
+            { name: "medium", type: "text", admin: { description: "utm_medium" } },
+            { name: "campaign", type: "text", admin: { description: "utm_campaign" } },
+            { name: "referrer", type: "text" },
+            { name: "landingPage", type: "text" },
           ],
         },
       ],
@@ -1077,6 +1113,75 @@ export default buildConfig({
         },
         { name: "value", type: "number", required: true },
         { name: "active", type: "checkbox", defaultValue: true },
+      ],
+    },
+    {
+      slug: "quotes",
+      labels: { singular: "Quote", plural: "Quotes / Proposals" },
+      admin: {
+        useAsTitle: "number",
+        group: "Billing",
+        defaultColumns: ["number", "prospectName", "total", "status", "validUntil"],
+      },
+      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          async ({ data, operation, req }) => {
+            if (Array.isArray(data.items)) {
+              const subtotal = (data.items as { quantity?: number; unitPrice?: number }[]).reduce(
+                (s, it) => s + (Number(it.quantity) || 1) * (Number(it.unitPrice) || 0),
+                0,
+              );
+              data.subtotal = Math.round(subtotal * 100) / 100;
+              data.tax = Math.round(subtotal * 0.1 * 100) / 100;
+              data.total = Math.round((subtotal + data.tax) * 100) / 100;
+            }
+            if (operation === "create") {
+              if (!data.number) {
+                const year = new Date().getFullYear();
+                const { totalDocs } = await req.payload.count({ collection: "quotes" });
+                data.number = `QUO-${year}-${String(totalDocs + 1).padStart(4, "0")}`;
+              }
+              if (!data.acceptToken) data.acceptToken = crypto.randomBytes(24).toString("hex");
+              if (!data.validUntil) {
+                const d = new Date();
+                d.setDate(d.getDate() + 30);
+                data.validUntil = d.toISOString();
+              }
+            }
+            if (data.status === "accepted" && !data.acceptedAt) data.acceptedAt = new Date().toISOString();
+            return data;
+          },
+        ],
+      },
+      fields: [
+        { name: "number", type: "text", unique: true, admin: { description: "Auto-generated" } },
+        { name: "prospectName", type: "text", required: true },
+        { name: "prospectEmail", type: "email", required: true },
+        { name: "customer", type: "relationship", relationTo: "customers", admin: { description: "Link once they're a client" } },
+        { name: "title", type: "text", defaultValue: "Proposal", admin: { description: "e.g. Managed IT proposal" } },
+        { name: "intro", type: "textarea", admin: { description: "Optional summary shown above the line items" } },
+        {
+          name: "items",
+          type: "array",
+          fields: [
+            { name: "description", type: "text", required: true },
+            { name: "quantity", type: "number", defaultValue: 1 },
+            { name: "unitPrice", type: "number", admin: { description: "ex-GST, AUD" } },
+          ],
+        },
+        { name: "subtotal", type: "number", admin: { readOnly: true } },
+        { name: "tax", type: "number", admin: { readOnly: true, description: "GST" } },
+        { name: "total", type: "number", admin: { readOnly: true } },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "draft",
+          options: ["draft", "sent", "accepted", "declined", "expired"].map((v) => ({ label: v, value: v })),
+        },
+        { name: "validUntil", type: "date" },
+        { name: "acceptToken", type: "text", unique: true, admin: { readOnly: true, description: "Used in the public accept link" } },
+        { name: "acceptedAt", type: "date", admin: { readOnly: true } },
       ],
     },
     {

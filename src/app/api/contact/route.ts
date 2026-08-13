@@ -4,6 +4,7 @@ import { saveLead } from "@/lib/content";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { json, readBody } from "@/lib/api";
+import { emitEvent } from "@/lib/events";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -16,6 +17,15 @@ const schema = z.object({
   message: z.string().trim().min(1, "Please enter a message.").max(5000),
   company_website: z.string().optional(), // honeypot
   turnstileToken: z.string().optional(),
+  attribution: z
+    .object({
+      source: z.string().trim().max(120).optional(),
+      medium: z.string().trim().max(120).optional(),
+      campaign: z.string().trim().max(200).optional(),
+      referrer: z.string().trim().max(500).optional(),
+      landingPage: z.string().trim().max(500).optional(),
+    })
+    .optional(),
 });
 
 export async function POST(req: Request) {
@@ -90,8 +100,18 @@ export async function POST(req: Request) {
     phone: data.phone || undefined,
     service: data.service || undefined,
     message: data.message,
+    attribution: data.attribution,
   });
   if (!stored) logger.error("contact: failed to persist lead to CMS", { email: lead.email });
+
+  // Fan the lead out to any configured automation platform (best-effort).
+  await emitEvent("lead.created", {
+    id: stored,
+    name: data.name,
+    email: data.email,
+    service: data.service || null,
+    attribution: data.attribution || null,
+  });
 
   return json({ ok: true });
 }
