@@ -527,6 +527,15 @@ function Invoices({ invoices, onPay, busy }: { invoices: Invoice[]; onPay: (id: 
                 <div className="flex-1" />
                 <Pill label={iv.status} />
                 <div className="w-24 text-right font-display text-[16px] font-bold">{money(iv.total)}</div>
+                <a
+                  href={`/api/portal/invoices/${iv.id}/pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-[9px] border border-white/[.12] px-3 py-2 text-[12.5px] font-semibold text-muted-2 hover:text-foreground"
+                  title="Download tax invoice (PDF)"
+                >
+                  PDF
+                </a>
                 {payable ? (
                   <button disabled={busy} onClick={() => onPay(iv.id)} className="rounded-[9px] bg-indigo px-4 py-2 text-[12.5px] font-semibold text-white disabled:opacity-60">Pay now</button>
                 ) : (

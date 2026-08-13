@@ -785,8 +785,15 @@ export interface Subscription {
  */
 export interface Invoice {
   id: number;
-  number: string;
+  /**
+   * Auto-generated on create if left blank
+   */
+  number?: string | null;
   customer?: (number | null) | Customer;
+  /**
+   * Set automatically for renewal invoices; links dunning back to the service
+   */
+  subscription?: (number | null) | Subscription;
   items?:
     | {
         description: string;
@@ -807,6 +814,11 @@ export interface Invoice {
   status?: ('unpaid' | 'paid' | 'overdue' | 'refunded' | 'cancelled') | null;
   dueDate?: string | null;
   paidDate?: string | null;
+  /**
+   * Dunning reminders emailed so far
+   */
+  remindersSent?: number | null;
+  lastReminderAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1480,6 +1492,7 @@ export interface SubscriptionsSelect<T extends boolean = true> {
 export interface InvoicesSelect<T extends boolean = true> {
   number?: T;
   customer?: T;
+  subscription?: T;
   items?:
     | T
     | {
@@ -1494,6 +1507,8 @@ export interface InvoicesSelect<T extends boolean = true> {
   status?: T;
   dueDate?: T;
   paidDate?: T;
+  remindersSent?: T;
+  lastReminderAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

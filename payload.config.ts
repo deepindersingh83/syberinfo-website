@@ -853,8 +853,14 @@ export default buildConfig({
         ],
       },
       fields: [
-        { name: "number", type: "text", required: true, unique: true },
+        { name: "number", type: "text", unique: true, admin: { description: "Auto-generated on create if left blank" } },
         { name: "customer", type: "relationship", relationTo: "customers" },
+        {
+          name: "subscription",
+          type: "relationship",
+          relationTo: "subscriptions",
+          admin: { description: "Set automatically for renewal invoices; links dunning back to the service" },
+        },
         {
           name: "items",
           type: "array",
@@ -875,6 +881,13 @@ export default buildConfig({
         },
         { name: "dueDate", type: "date" },
         { name: "paidDate", type: "date" },
+        {
+          name: "remindersSent",
+          type: "number",
+          defaultValue: 0,
+          admin: { description: "Dunning reminders emailed so far", readOnly: true },
+        },
+        { name: "lastReminderAt", type: "date", admin: { readOnly: true } },
       ],
     },
     {

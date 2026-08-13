@@ -8,6 +8,7 @@ import * as migration_20260622_155315_media from './20260622_155315_media';
 import * as migration_20260622_170310_service_pricing from './20260622_170310_service_pricing';
 import * as migration_20260622_172425_billing_phase0 from './20260622_172425_billing_phase0';
 import * as migration_20260719_184322_software_catalog from './20260719_184322_software_catalog';
+import * as migration_20260813_151651_billing_dunning from './20260813_151651_billing_dunning';
 
 export const migrations = [
   {
@@ -58,6 +59,11 @@ export const migrations = [
   {
     up: migration_20260719_184322_software_catalog.up,
     down: migration_20260719_184322_software_catalog.down,
-    name: '20260719_184322_software_catalog'
+    name: '20260719_184322_software_catalog',
+  },
+  {
+    up: migration_20260813_151651_billing_dunning.up,
+    down: migration_20260813_151651_billing_dunning.down,
+    name: '20260813_151651_billing_dunning'
   },
 ];
