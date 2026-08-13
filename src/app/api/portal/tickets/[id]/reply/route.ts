@@ -53,9 +53,26 @@ export async function POST(
     overrideAccess: true,
     data: {
       status: "customer-reply",
-      messages: [...existing, { author: customer.name || customer.email, message }],
+      messages: [...existing, { author: customer.name || customer.email, staff: false, message }],
     },
   });
+
+  // Notify the team that the customer replied (best-effort; never blocks the reply).
+  const notify = process.env.CONTACT_TO || process.env.CONTACT_FROM_ADDRESS;
+  if (notify) {
+    try {
+      const base = process.env.SITE_URL || "https://syberinfo.com.au";
+      await payload.sendEmail({
+        to: notify,
+        subject: `Customer reply — ticket "${String(ticket.subject || "")}"`,
+        html: `<p><strong>${customer.name || customer.email}</strong> replied to ticket <strong>${String(
+          ticket.subject || "",
+        )}</strong>:</p><blockquote>${message.replace(/</g, "&lt;")}</blockquote><p><a href="${base}/admin/collections/tickets/${id}">Open in admin</a></p>`,
+      });
+    } catch {
+      /* email is best-effort */
+    }
+  }
 
   return json({ ok: true });
 }

@@ -957,11 +957,76 @@ export default buildConfig({
     {
       slug: "tickets",
       labels: { singular: "Ticket", plural: "Support Tickets" },
-      admin: { useAsTitle: "subject", group: "Billing", defaultColumns: ["subject", "customer", "status", "priority"] },
+      admin: {
+        useAsTitle: "subject",
+        group: "Billing",
+        defaultColumns: ["subject", "customer", "status", "priority", "slaDueAt"],
+      },
       access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          ({ data, operation }) => {
+            // First-response SLA target (hours) by priority.
+            const SLA_HOURS: Record<string, number> = { high: 4, medium: 8, low: 24 };
+            if (operation === "create") {
+              const hrs = SLA_HOURS[String(data.priority || "medium")] ?? 8;
+              const due = new Date();
+              due.setHours(due.getHours() + hrs);
+              if (!data.slaDueAt) data.slaDueAt = due.toISOString();
+            }
+            // Stamp first response the first time staff answers.
+            if (data.status === "answered" && !data.firstRespondedAt) {
+              data.firstRespondedAt = new Date().toISOString();
+            }
+            // Stamp resolution when closed (clear if reopened).
+            if (data.status === "closed" && !data.resolvedAt) {
+              data.resolvedAt = new Date().toISOString();
+            } else if (data.status && data.status !== "closed") {
+              data.resolvedAt = null;
+            }
+            return data;
+          },
+        ],
+        afterChange: [
+          async ({ doc, previousDoc, req, operation }) => {
+            // Email the customer when the team adds a new staff reply.
+            if (operation !== "update") return;
+            const msgs = Array.isArray(doc.messages) ? doc.messages : [];
+            const prevMsgs = Array.isArray(previousDoc?.messages) ? previousDoc.messages : [];
+            if (msgs.length <= prevMsgs.length) return;
+            const last = msgs[msgs.length - 1] as { staff?: boolean; message?: string };
+            if (!last?.staff) return;
+            try {
+              const custRef = doc.customer;
+              const cust =
+                custRef && typeof custRef === "object"
+                  ? custRef
+                  : await req.payload.findByID({ collection: "customers", id: custRef, depth: 0, overrideAccess: true });
+              const email = (cust as { email?: string })?.email;
+              if (!email) return;
+              const base = process.env.SITE_URL || "https://syberinfo.com.au";
+              await req.payload.sendEmail({
+                to: email,
+                subject: `Re: ${doc.subject} — SyberInfo support`,
+                html: `<p>Hi,</p><p>Our team has replied to your support ticket <strong>${doc.subject}</strong>:</p><blockquote>${String(
+                  last.message || "",
+                ).replace(/</g, "&lt;")}</blockquote><p><a href="${base}/portal">View &amp; reply in the client portal</a></p><p>— SyberInfo</p>`,
+              });
+            } catch {
+              /* best-effort notification */
+            }
+          },
+        ],
+      },
       fields: [
         { name: "subject", type: "text", required: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
+        {
+          name: "assignee",
+          type: "relationship",
+          relationTo: "users",
+          admin: { description: "Engineer responsible for this ticket" },
+        },
         {
           name: "department",
           type: "select",
@@ -980,11 +1045,15 @@ export default buildConfig({
           defaultValue: "medium",
           options: ["low", "medium", "high"].map((v) => ({ label: v, value: v })),
         },
+        { name: "slaDueAt", type: "date", admin: { description: "First-response SLA deadline", readOnly: true } },
+        { name: "firstRespondedAt", type: "date", admin: { readOnly: true } },
+        { name: "resolvedAt", type: "date", admin: { readOnly: true } },
         {
           name: "messages",
           type: "array",
           fields: [
             { name: "author", type: "text" },
+            { name: "staff", type: "checkbox", defaultValue: false, admin: { description: "Was this reply from our team?" } },
             { name: "message", type: "textarea", required: true },
           ],
         },
@@ -1008,6 +1077,106 @@ export default buildConfig({
         },
         { name: "value", type: "number", required: true },
         { name: "active", type: "checkbox", defaultValue: true },
+      ],
+    },
+    {
+      slug: "system-components",
+      labels: { singular: "System Component", plural: "Status — Components" },
+      admin: {
+        useAsTitle: "name",
+        group: "Content",
+        defaultColumns: ["name", "status", "order"],
+        description: "Services shown on the public status page.",
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      defaultSort: "order",
+      fields: [
+        { name: "name", type: "text", required: true },
+        { name: "description", type: "text" },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "operational",
+          options: [
+            { label: "Operational", value: "operational" },
+            { label: "Degraded performance", value: "degraded" },
+            { label: "Partial outage", value: "partial" },
+            { label: "Major outage", value: "major" },
+            { label: "Maintenance", value: "maintenance" },
+          ],
+        },
+        { name: "order", type: "number", defaultValue: 0 },
+      ],
+    },
+    {
+      slug: "incidents",
+      labels: { singular: "Incident", plural: "Status — Incidents" },
+      admin: {
+        useAsTitle: "title",
+        group: "Content",
+        defaultColumns: ["title", "severity", "status", "startedAt"],
+        description: "Incidents & maintenance shown on the public status page.",
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      defaultSort: "-startedAt",
+      hooks: {
+        beforeChange: [
+          ({ data, operation }) => {
+            if (operation === "create" && !data.startedAt) data.startedAt = new Date().toISOString();
+            if (data.status === "resolved" && !data.resolvedAt) data.resolvedAt = new Date().toISOString();
+            if (data.status && data.status !== "resolved") data.resolvedAt = null;
+            return data;
+          },
+        ],
+      },
+      fields: [
+        { name: "title", type: "text", required: true },
+        {
+          name: "severity",
+          type: "select",
+          defaultValue: "minor",
+          options: [
+            { label: "Maintenance", value: "maintenance" },
+            { label: "Minor", value: "minor" },
+            { label: "Major", value: "major" },
+            { label: "Critical", value: "critical" },
+          ],
+        },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "investigating",
+          options: [
+            { label: "Investigating", value: "investigating" },
+            { label: "Identified", value: "identified" },
+            { label: "Monitoring", value: "monitoring" },
+            { label: "Resolved", value: "resolved" },
+          ],
+        },
+        {
+          name: "affected",
+          type: "relationship",
+          relationTo: "system-components",
+          hasMany: true,
+          admin: { description: "Components affected by this incident" },
+        },
+        {
+          name: "updates",
+          type: "array",
+          admin: { description: "Timeline of updates, newest last" },
+          fields: [
+            {
+              name: "status",
+              type: "select",
+              defaultValue: "investigating",
+              options: ["investigating", "identified", "monitoring", "resolved"].map((v) => ({ label: v, value: v })),
+            },
+            { name: "body", type: "textarea", required: true },
+            { name: "at", type: "date", admin: { description: "Defaults to now if blank" } },
+          ],
+        },
+        { name: "startedAt", type: "date", admin: { readOnly: true } },
+        { name: "resolvedAt", type: "date", admin: { readOnly: true } },
       ],
     },
     {

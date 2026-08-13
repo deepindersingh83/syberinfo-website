@@ -91,6 +91,8 @@ export interface Config {
     'client-domains': ClientDomain;
     tickets: Ticket;
     coupons: Coupon;
+    'system-components': SystemComponent;
+    incidents: Incident;
     redirects: Redirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -122,6 +124,8 @@ export interface Config {
     'client-domains': ClientDomainsSelect<false> | ClientDomainsSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
     coupons: CouponsSelect<false> | CouponsSelect<true>;
+    'system-components': SystemComponentsSelect<false> | SystemComponentsSelect<true>;
+    incidents: IncidentsSelect<false> | IncidentsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -913,12 +917,26 @@ export interface Ticket {
   id: number;
   subject: string;
   customer?: (number | null) | Customer;
+  /**
+   * Engineer responsible for this ticket
+   */
+  assignee?: (number | null) | User;
   department?: ('support' | 'billing' | 'sales') | null;
   status?: ('open' | 'answered' | 'customer-reply' | 'closed') | null;
   priority?: ('low' | 'medium' | 'high') | null;
+  /**
+   * First-response SLA deadline
+   */
+  slaDueAt?: string | null;
+  firstRespondedAt?: string | null;
+  resolvedAt?: string | null;
   messages?:
     | {
         author?: string | null;
+        /**
+         * Was this reply from our team?
+         */
+        staff?: boolean | null;
         message: string;
         id?: string | null;
       }[]
@@ -936,6 +954,55 @@ export interface Coupon {
   type?: ('percent' | 'fixed') | null;
   value: number;
   active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Services shown on the public status page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "system-components".
+ */
+export interface SystemComponent {
+  id: number;
+  name: string;
+  description?: string | null;
+  status?: ('operational' | 'degraded' | 'partial' | 'major' | 'maintenance') | null;
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Incidents & maintenance shown on the public status page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "incidents".
+ */
+export interface Incident {
+  id: number;
+  title: string;
+  severity?: ('maintenance' | 'minor' | 'major' | 'critical') | null;
+  status?: ('investigating' | 'identified' | 'monitoring' | 'resolved') | null;
+  /**
+   * Components affected by this incident
+   */
+  affected?: (number | SystemComponent)[] | null;
+  /**
+   * Timeline of updates, newest last
+   */
+  updates?:
+    | {
+        status?: ('investigating' | 'identified' | 'monitoring' | 'resolved') | null;
+        body: string;
+        /**
+         * Defaults to now if blank
+         */
+        at?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  startedAt?: string | null;
+  resolvedAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1078,6 +1145,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'coupons';
         value: number | Coupon;
+      } | null)
+    | ({
+        relationTo: 'system-components';
+        value: number | SystemComponent;
+      } | null)
+    | ({
+        relationTo: 'incidents';
+        value: number | Incident;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1646,13 +1721,18 @@ export interface ClientDomainsSelect<T extends boolean = true> {
 export interface TicketsSelect<T extends boolean = true> {
   subject?: T;
   customer?: T;
+  assignee?: T;
   department?: T;
   status?: T;
   priority?: T;
+  slaDueAt?: T;
+  firstRespondedAt?: T;
+  resolvedAt?: T;
   messages?:
     | T
     | {
         author?: T;
+        staff?: T;
         message?: T;
         id?: T;
       };
@@ -1668,6 +1748,40 @@ export interface CouponsSelect<T extends boolean = true> {
   type?: T;
   value?: T;
   active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "system-components_select".
+ */
+export interface SystemComponentsSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  status?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "incidents_select".
+ */
+export interface IncidentsSelect<T extends boolean = true> {
+  title?: T;
+  severity?: T;
+  status?: T;
+  affected?: T;
+  updates?:
+    | T
+    | {
+        status?: T;
+        body?: T;
+        at?: T;
+        id?: T;
+      };
+  startedAt?: T;
+  resolvedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

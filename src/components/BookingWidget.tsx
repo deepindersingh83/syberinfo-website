@@ -41,6 +41,41 @@ export default function BookingWidget() {
     return `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}${time ? ` at ${time}` : ""}`;
   })();
 
+  // When a real scheduler is configured (Cal.com / Calendly / Google), embed it
+  // so bookings land straight in the team's calendar. Otherwise fall back to the
+  // built-in day/time picker below.
+  const bookingUrl = process.env.NEXT_PUBLIC_BOOKING_URL;
+  if (bookingUrl) {
+    return (
+      <div className="grid gap-8 lg:grid-cols-[1fr_1.6fr]">
+        <div>
+          <h2 className="mb-5 font-display text-[22px] font-bold tracking-[-.02em]">What to expect</h2>
+          <div className="flex flex-col gap-4">
+            {expect.map((e) => (
+              <div key={e.t} className="flex items-start gap-3.5">
+                <span className="mt-1 grid h-6 w-6 flex-none place-items-center rounded-full bg-lime/[.14] text-[13px] text-lime">
+                  ✓
+                </span>
+                <div>
+                  <div className="text-[15px] font-semibold">{e.t}</div>
+                  <div className="text-[13.5px] text-muted-2">{e.d}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card overflow-hidden p-0">
+          <iframe
+            src={bookingUrl}
+            title="Book a call with SyberInfo"
+            className="h-[720px] w-full border-0"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (sent) {
     return (
       <div className="card mx-auto max-w-[560px] px-8 py-12 text-center">
