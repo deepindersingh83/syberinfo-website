@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { site } from "@/lib/site";
 import { getServices, getPosts } from "@/lib/content";
 import { caseStudies } from "@/lib/it-data";
+import { serviceAreas } from "@/lib/areas";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/book", priority: 0.8, freq: "yearly" },
     { path: "/status", priority: 0.4, freq: "daily" },
     { path: "/essential-eight", priority: 0.7, freq: "monthly" },
+    { path: "/managed-it", priority: 0.7, freq: "monthly" },
     { path: "/privacy", priority: 0.2, freq: "yearly" },
     { path: "/terms", priority: 0.2, freq: "yearly" },
   ];
@@ -57,5 +59,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...base, ...serviceRoutes, ...workRoutes, ...postRoutes];
+  const areaRoutes: MetadataRoute.Sitemap = serviceAreas.map((a) => ({
+    url: `${site.url}/managed-it/${a.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  return [...base, ...serviceRoutes, ...workRoutes, ...postRoutes, ...areaRoutes];
 }

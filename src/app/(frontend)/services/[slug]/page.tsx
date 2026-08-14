@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
 import JsonLd, { faqJsonLd, breadcrumbJsonLd } from "@/components/JsonLd";
 import { getService, getServices } from "@/lib/content";
+import { getSeoOverride, applySeo } from "@/lib/seo";
 import { site, ogImage } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const service = await getService(slug);
   if (!service) return { title: "Service not found" };
-  return {
+  const base: Metadata = {
     title: service.title,
     description: service.overview || service.description,
     alternates: { canonical: `${site.url}/services/${service.slug}` },
@@ -25,6 +26,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image", images: [ogImage(service.title, "Services")] },
   };
+  return applySeo(base, await getSeoOverride("services", slug));
 }
 
 export default async function ServiceDetailPage({ params }: Params) {

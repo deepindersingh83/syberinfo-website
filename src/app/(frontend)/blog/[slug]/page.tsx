@@ -4,7 +4,9 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Aurora, ButtonLink } from "@/components/ui";
 import JsonLd, { breadcrumbJsonLd } from "@/components/JsonLd";
+import RichBody from "@/components/RichBody";
 import { getPost, getPosts } from "@/lib/content";
+import { getSeoOverride, applySeo } from "@/lib/seo";
 import { site, ogImage } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +26,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) return { title: "Article not found" };
-  return {
+  const base: Metadata = {
     title: post.title,
     description: post.excerpt,
     alternates: { canonical: `${site.url}/blog/${post.slug}` },
@@ -37,6 +39,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image", images: [ogImage(post.title, "Insights")] },
   };
+  return applySeo(base, await getSeoOverride("posts", slug));
 }
 
 export default async function PostPage({ params }: Params) {
@@ -108,11 +111,17 @@ export default async function PostPage({ params }: Params) {
           </div>
         )}
 
-        <div className="mt-10 space-y-5 text-[1.05rem] leading-relaxed text-foreground/90">
-          {paragraphs.map((para, i) => (
-            <p key={i}>{para}</p>
-          ))}
-        </div>
+        {post.richBody ? (
+          <div className="mt-10 text-[1.05rem] leading-relaxed text-foreground/90">
+            <RichBody data={post.richBody} />
+          </div>
+        ) : (
+          <div className="mt-10 space-y-5 text-[1.05rem] leading-relaxed text-foreground/90">
+            {paragraphs.map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
+        )}
 
         <div className="mt-12 rounded-3xl border border-white/10 bg-ink-800/60 p-8 text-center">
           <h2 className="text-xl font-bold">Want help with this?</h2>

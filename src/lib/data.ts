@@ -680,7 +680,8 @@ export type Post = {
   author: string;
   date: string; // ISO date
   readMins: number;
-  body: string; // paragraphs separated by blank lines
+  body: string; // paragraphs separated by blank lines (plain-text fallback)
+  richBody?: unknown; // Lexical rich-text JSON from the CMS, when present
   status?: "draft" | "published";
   coverImage?: string; // image URL (from CMS upload)
 };

@@ -243,9 +243,23 @@ function mapPost(d: unknown): Post {
     date: String(doc.date ?? ""),
     readMins: Number(doc.readMins ?? 4),
     body: String(doc.body ?? ""),
+    richBody: hasRichText(doc.richBody) ? doc.richBody : undefined,
     status: (doc.status as Post["status"]) ?? "published",
     coverImage: mediaUrl(doc.coverImage),
   } satisfies Post;
+}
+
+/** True when a Lexical value actually has content (not an empty root). */
+function hasRichText(v: unknown): boolean {
+  const root = (v as { root?: { children?: unknown[] } })?.root;
+  if (!root || !Array.isArray(root.children)) return false;
+  // An "empty" editor is a single empty paragraph — treat that as no content.
+  if (root.children.length === 0) return false;
+  if (root.children.length === 1) {
+    const only = root.children[0] as { type?: string; children?: unknown[] };
+    if (only?.type === "paragraph" && (!only.children || only.children.length === 0)) return false;
+  }
+  return true;
 }
 
 export async function getPosts(): Promise<Post[]> {

@@ -94,6 +94,8 @@ export interface Config {
     quotes: Quote;
     'system-components': SystemComponent;
     incidents: Incident;
+    onboarding: Onboarding;
+    'status-subscribers': StatusSubscriber;
     redirects: Redirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -128,6 +130,8 @@ export interface Config {
     quotes: QuotesSelect<false> | QuotesSelect<true>;
     'system-components': SystemComponentsSelect<false> | SystemComponentsSelect<true>;
     incidents: IncidentsSelect<false> | IncidentsSelect<true>;
+    onboarding: OnboardingSelect<false> | OnboardingSelect<true>;
+    'status-subscribers': StatusSubscribersSelect<false> | StatusSubscribersSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -543,9 +547,27 @@ export interface Post {
    */
   readMins?: number | null;
   /**
-   * Article body. Separate paragraphs with a blank line.
+   * Plain-text fallback body. Separate paragraphs with a blank line.
    */
   body: string;
+  /**
+   * Rich formatted article (headings, lists, links, inline images). When set, it replaces the plain body on the site.
+   */
+  richBody?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   /**
    * Optional search / social overrides. Leave blank to use the page defaults.
    */
@@ -1091,6 +1113,44 @@ export interface Incident {
   createdAt: string;
 }
 /**
+ * New-client onboarding checklists. Auto-created when a customer is added.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "onboarding".
+ */
+export interface Onboarding {
+  id: number;
+  customer?: (number | null) | Customer;
+  status?: ('active' | 'complete') | null;
+  steps?:
+    | {
+        label: string;
+        done?: boolean | null;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * People subscribed to incident/maintenance email alerts.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "status-subscribers".
+ */
+export interface StatusSubscriber {
+  id: number;
+  email: string;
+  confirmed?: boolean | null;
+  /**
+   * Unsubscribe token
+   */
+  token?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * 301/302 redirects enforced site-wide. Protects SEO when URLs change.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1241,6 +1301,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'incidents';
         value: number | Incident;
+      } | null)
+    | ({
+        relationTo: 'onboarding';
+        value: number | Onboarding;
+      } | null)
+    | ({
+        relationTo: 'status-subscribers';
+        value: number | StatusSubscriber;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1486,6 +1554,7 @@ export interface PostsSelect<T extends boolean = true> {
   date?: T;
   readMins?: T;
   body?: T;
+  richBody?: T;
   seo?:
     | T
     | {
@@ -1911,6 +1980,35 @@ export interface IncidentsSelect<T extends boolean = true> {
       };
   startedAt?: T;
   resolvedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "onboarding_select".
+ */
+export interface OnboardingSelect<T extends boolean = true> {
+  customer?: T;
+  status?: T;
+  steps?:
+    | T
+    | {
+        label?: T;
+        done?: T;
+        note?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "status-subscribers_select".
+ */
+export interface StatusSubscribersSelect<T extends boolean = true> {
+  email?: T;
+  confirmed?: T;
+  token?: T;
   updatedAt?: T;
   createdAt?: T;
 }

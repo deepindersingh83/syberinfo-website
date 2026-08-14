@@ -222,3 +222,18 @@
     transform: none !important;
   }
 }
+
+/* CMS rich-text (Lexical) article body */
+.rich-body h2 { font-family: var(--font-display, inherit); font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; margin: 2rem 0 .75rem; }
+.rich-body h3 { font-family: var(--font-display, inherit); font-size: 1.3rem; font-weight: 700; letter-spacing: -.01em; margin: 1.6rem 0 .5rem; }
+.rich-body p { margin: 0 0 1.15rem; }
+.rich-body ul, .rich-body ol { margin: 0 0 1.15rem 1.25rem; display: flex; flex-direction: column; gap: .4rem; }
+.rich-body ul { list-style: disc; }
+.rich-body ol { list-style: decimal; }
+.rich-body a { color: #9d9bff; text-decoration: underline; text-underline-offset: 2px; }
+.rich-body a:hover { color: #c9f25e; }
+.rich-body blockquote { border-left: 3px solid #5e5bff; padding-left: 1rem; margin: 0 0 1.15rem; color: rgba(255,255,255,.75); font-style: italic; }
+.rich-body img { max-width: 100%; height: auto; border-radius: 12px; margin: 1.5rem 0; }
+.rich-body hr { border: 0; border-top: 1px solid rgba(255,255,255,.1); margin: 2rem 0; }
+.rich-body strong { font-weight: 700; color: #fff; }
+.rich-body code { font-family: var(--font-mono, monospace); font-size: .9em; background: rgba(255,255,255,.06); padding: .12em .4em; border-radius: 5px; }
