@@ -278,6 +278,52 @@ export async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
   }, fallbackCaseStudies.find((c) => c.slug === slug) ?? null);
 }
 
+/* ------------------------------ Page headers ----------------------------- */
+export type PageHeaderContent = { eyebrow: string; heading: string; subheading: string };
+
+const pageHeaderDefaults: Record<string, PageHeaderContent> = {
+  about: {
+    eyebrow: "WHO WE ARE",
+    heading: "",
+    subheading:
+      "Founded in Melbourne in 2015, SyberInfo grew out of a simple frustration: IT support that only shows up when something's already broken. We flipped the model.",
+  },
+  careers: {
+    eyebrow: "CAREERS",
+    heading: "",
+    subheading:
+      "We're a small Melbourne team that believes great support comes from engineers who are rested, trusted and genuinely cared for.",
+  },
+  services: {
+    eyebrow: "SERVICES",
+    heading: "",
+    subheading:
+      "Six core practices, one accountable team. Take one service or hand us the whole stack — either way, you get proactive engineers who know your business.",
+  },
+  pricing: {
+    eyebrow: "Pricing & packages",
+    heading: "",
+    subheading:
+      "Official Australian pricing on Google Workspace & Microsoft 365, plus flexible packages for websites and marketing.",
+  },
+};
+
+export async function getPageHeader(page: string): Promise<PageHeaderContent> {
+  const fb = pageHeaderDefaults[page] ?? { eyebrow: "", heading: "", subheading: "" };
+  return tryPayload(async (payload) => {
+    const g = (await payload.findGlobal({ slug: "page-content" })) as unknown as Record<string, unknown>;
+    const rows = Array.isArray(g.headers) ? (g.headers as Record<string, unknown>[]) : [];
+    const row = rows.find((r) => String(r.page).trim() === page);
+    if (!row) return fb;
+    const s = (v: unknown, d: string) => (v == null || String(v).trim() === "" ? d : String(v));
+    return {
+      eyebrow: s(row.eyebrow, fb.eyebrow),
+      heading: s(row.heading, fb.heading),
+      subheading: s(row.subheading, fb.subheading),
+    };
+  }, fb);
+}
+
 /* ------------------------------ Legal pages ------------------------------ */
 export async function getLegalPage(slug: string): Promise<{ title: string; body: unknown } | null> {
   return tryPayload(async (payload) => {

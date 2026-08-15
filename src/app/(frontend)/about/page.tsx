@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import PageHeader from "@/components/PageHeader";
+import { getPageHeader } from "@/lib/content";
 import StatCounter from "@/components/StatCounter";
 import { getStats } from "@/lib/content";
 import { values } from "@/lib/it-data";
@@ -23,17 +24,21 @@ const timeline = [
 ];
 
 export default async function AboutPage() {
-  const stats = await getStats();
+  const [stats, ph] = await Promise.all([getStats(), getPageHeader("about")]);
   return (
     <>
       <PageHeader
-        tag="WHO WE ARE"
+        tag={ph.eyebrow}
         title={
-          <>
-            A small team that treats your stack like <span className="text-indigo">our own</span>.
-          </>
+          ph.heading ? (
+            ph.heading
+          ) : (
+            <>
+              A small team that treats your stack like <span className="text-indigo">our own</span>.
+            </>
+          )
         }
-        subtitle="Founded in Melbourne in 2015, SyberInfo grew out of a simple frustration: IT support that only shows up when something's already broken. We flipped the model."
+        subtitle={ph.subheading}
       />
 
       <section className="relative z-[1] mx-auto max-w-[1000px] px-5 py-8 sm:px-10">

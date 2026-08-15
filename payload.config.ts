@@ -1570,6 +1570,25 @@ export default buildConfig({
       ],
     },
     {
+      slug: "page-content",
+      label: "Page Headers",
+      admin: { group: "Content", description: "Eyebrow / heading / subheading for the top of each marketing page." },
+      access: { read: () => true, update: adminOnly },
+      fields: [
+        {
+          name: "headers",
+          type: "array",
+          admin: { description: "One row per page. 'page' must match the page key (about, careers, services, pricing)." },
+          fields: [
+            { name: "page", type: "text", required: true, admin: { description: "Page key: about, careers, services, pricing" } },
+            { name: "eyebrow", type: "text", admin: { description: "Small label above the heading" } },
+            { name: "heading", type: "text", admin: { description: "Plain text; overrides the styled default when set" } },
+            { name: "subheading", type: "textarea" },
+          ],
+        },
+      ],
+    },
+    {
       slug: "site-settings",
       label: "Site Settings",
       admin: { group: "Content", description: "Brand, contact details, socials and footer — used site-wide." },

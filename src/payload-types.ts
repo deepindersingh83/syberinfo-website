@@ -148,11 +148,13 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'site-content': SiteContent;
+    'page-content': PageContent;
     'site-settings': SiteSetting;
     'billing-settings': BillingSetting;
   };
   globalsSelect: {
     'site-content': SiteContentSelect<false> | SiteContentSelect<true>;
+    'page-content': PageContentSelect<false> | PageContentSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'billing-settings': BillingSettingsSelect<false> | BillingSettingsSelect<true>;
   };
@@ -2321,6 +2323,38 @@ export interface SiteContent {
   createdAt?: string | null;
 }
 /**
+ * Eyebrow / heading / subheading for the top of each marketing page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-content".
+ */
+export interface PageContent {
+  id: number;
+  /**
+   * One row per page. 'page' must match the page key (about, careers, services, pricing).
+   */
+  headers?:
+    | {
+        /**
+         * Page key: about, careers, services, pricing
+         */
+        page: string;
+        /**
+         * Small label above the heading
+         */
+        eyebrow?: string | null;
+        /**
+         * Plain text; overrides the styled default when set
+         */
+        heading?: string | null;
+        subheading?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * Brand, contact details, socials and footer — used site-wide.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2446,6 +2480,24 @@ export interface SiteContentSelect<T extends boolean = true> {
         subheading?: T;
         buttonLabel?: T;
         buttonHref?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-content_select".
+ */
+export interface PageContentSelect<T extends boolean = true> {
+  headers?:
+    | T
+    | {
+        page?: T;
+        eyebrow?: T;
+        heading?: T;
+        subheading?: T;
+        id?: T;
       };
   updatedAt?: T;
   createdAt?: T;

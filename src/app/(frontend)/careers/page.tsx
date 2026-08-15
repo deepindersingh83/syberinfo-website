@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import PageHeader from "@/components/PageHeader";
+import { getPageHeader } from "@/lib/content";
 import { perks, roles } from "@/lib/it-data";
 
 export const metadata: Metadata = {
@@ -10,17 +11,22 @@ export const metadata: Metadata = {
     "Join SyberInfo — a small Melbourne team building calm, proactive managed IT for Australian business. Real balance, real growth.",
 };
 
-export default function CareersPage() {
+export default async function CareersPage() {
+  const ph = await getPageHeader("careers");
   return (
     <>
       <PageHeader
-        tag="CAREERS"
+        tag={ph.eyebrow}
         title={
-          <>
-            Do the best IT work of your life — <span className="text-indigo">without the burnout</span>.
-          </>
+          ph.heading ? (
+            ph.heading
+          ) : (
+            <>
+              Do the best IT work of your life — <span className="text-indigo">without the burnout</span>.
+            </>
+          )
         }
-        subtitle="We're a small Melbourne team that believes great support comes from engineers who are rested, trusted and genuinely cared for."
+        subtitle={ph.subheading}
       />
 
       {/* Perks */}
