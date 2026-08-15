@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import PageHeader from "@/components/PageHeader";
-import { caseStudies } from "@/lib/it-data";
+import { getCaseStudies } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Case studies",
@@ -12,7 +12,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function WorkPage() {
+export default async function WorkPage() {
+  const caseStudies = await getCaseStudies();
   return (
     <>
       <PageHeader

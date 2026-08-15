@@ -91,6 +91,7 @@ export interface Config {
     'client-domains': ClientDomain;
     tickets: Ticket;
     coupons: Coupon;
+    'case-studies': CaseStudy;
     quotes: Quote;
     'system-components': SystemComponent;
     incidents: Incident;
@@ -127,6 +128,7 @@ export interface Config {
     'client-domains': ClientDomainsSelect<false> | ClientDomainsSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
     coupons: CouponsSelect<false> | CouponsSelect<true>;
+    'case-studies': CaseStudiesSelect<false> | CaseStudiesSelect<true>;
     quotes: QuotesSelect<false> | QuotesSelect<true>;
     'system-components': SystemComponentsSelect<false> | SystemComponentsSelect<true>;
     incidents: IncidentsSelect<false> | IncidentsSelect<true>;
@@ -1016,6 +1018,100 @@ export interface Coupon {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "case-studies".
+ */
+export interface CaseStudy {
+  id: number;
+  title: string;
+  /**
+   * URL segment, e.g. clinic
+   */
+  slug: string;
+  /**
+   * Short card summary
+   */
+  summary: string;
+  tags?:
+    | {
+        tag: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Glyph shown on the card, e.g. + or ⚿
+   */
+  mark?: string | null;
+  /**
+   * CSS gradient for the card, e.g. linear-gradient(135deg,#3F3DCC,#5E5BFF)
+   */
+  gradient?: string | null;
+  /**
+   * Headline result numbers
+   */
+  metrics?:
+    | {
+        /**
+         * Value, e.g. 0 hrs
+         */
+        k: string;
+        /**
+         * Label, e.g. Downtime
+         */
+        v: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The Challenge / What we did / The outcome blocks
+   */
+  sections?:
+    | {
+        head: string;
+        body: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Client testimonial quote
+   */
+  quote?: string | null;
+  author?: string | null;
+  authorRole?: string | null;
+  authorInitials?: string | null;
+  /**
+   * Lower numbers show first
+   */
+  order?: number | null;
+  /**
+   * Optional search / social overrides. Leave blank to use the page defaults.
+   */
+  seo?: {
+    /**
+     * Overrides the <title> (≤ 60 chars ideal)
+     */
+    metaTitle?: string | null;
+    /**
+     * Overrides the meta description (≤ 155 chars ideal)
+     */
+    metaDescription?: string | null;
+    /**
+     * Social share image (og:image)
+     */
+    ogImage?: (number | null) | Media;
+    /**
+     * Absolute canonical URL, if different from this page
+     */
+    canonical?: string | null;
+    /**
+     * Hide this page from search engines
+     */
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "quotes".
  */
 export interface Quote {
@@ -1291,6 +1387,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'coupons';
         value: number | Coupon;
+      } | null)
+    | ({
+        relationTo: 'case-studies';
+        value: number | CaseStudy;
       } | null)
     | ({
         relationTo: 'quotes';
@@ -1919,6 +2019,53 @@ export interface CouponsSelect<T extends boolean = true> {
   type?: T;
   value?: T;
   active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "case-studies_select".
+ */
+export interface CaseStudiesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  summary?: T;
+  tags?:
+    | T
+    | {
+        tag?: T;
+        id?: T;
+      };
+  mark?: T;
+  gradient?: T;
+  metrics?:
+    | T
+    | {
+        k?: T;
+        v?: T;
+        id?: T;
+      };
+  sections?:
+    | T
+    | {
+        head?: T;
+        body?: T;
+        id?: T;
+      };
+  quote?: T;
+  author?: T;
+  authorRole?: T;
+  authorInitials?: T;
+  order?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        canonical?: T;
+        noindex?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

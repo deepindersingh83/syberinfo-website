@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
 import { caseStudies } from "@/lib/it-data";
+import { getCaseStudies, getCaseStudy } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
 
@@ -14,17 +15,17 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const c = caseStudies.find((x) => x.slug === slug);
+  const c = await getCaseStudy(slug);
   if (!c) return { title: "Case study not found" };
   return { title: c.title, description: c.summary };
 }
 
 export default async function CaseStudyPage({ params }: Params) {
   const { slug } = await params;
-  const c = caseStudies.find((x) => x.slug === slug);
+  const [c, all] = await Promise.all([getCaseStudy(slug), getCaseStudies()]);
   if (!c) notFound();
 
-  const more = caseStudies.filter((x) => x.slug !== c.slug);
+  const more = all.filter((x) => x.slug !== c.slug);
 
   return (
     <div className="relative z-[1]">

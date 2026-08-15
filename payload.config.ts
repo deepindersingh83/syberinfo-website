@@ -1162,6 +1162,49 @@ export default buildConfig({
       ],
     },
     {
+      slug: "case-studies",
+      labels: { singular: "Case Study", plural: "Case Studies" },
+      admin: {
+        useAsTitle: "title",
+        group: "Content",
+        defaultColumns: ["title", "slug", "order"],
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      defaultSort: "order",
+      fields: [
+        { name: "title", type: "text", required: true },
+        { name: "slug", type: "text", required: true, unique: true, admin: { description: "URL segment, e.g. clinic" } },
+        { name: "summary", type: "textarea", required: true, admin: { description: "Short card summary" } },
+        { name: "tags", type: "array", fields: [{ name: "tag", type: "text", required: true }] },
+        { name: "mark", type: "text", admin: { description: "Glyph shown on the card, e.g. + or ⚿" } },
+        { name: "gradient", type: "text", admin: { description: "CSS gradient for the card, e.g. linear-gradient(135deg,#3F3DCC,#5E5BFF)" } },
+        {
+          name: "metrics",
+          type: "array",
+          admin: { description: "Headline result numbers" },
+          fields: [
+            { name: "k", type: "text", required: true, admin: { description: "Value, e.g. 0 hrs" } },
+            { name: "v", type: "text", required: true, admin: { description: "Label, e.g. Downtime" } },
+          ],
+        },
+        {
+          name: "sections",
+          type: "array",
+          admin: { description: "The Challenge / What we did / The outcome blocks" },
+          fields: [
+            { name: "head", type: "text", required: true },
+            { name: "body", type: "textarea", required: true },
+          ],
+        },
+        { name: "quote", type: "textarea", admin: { description: "Client testimonial quote" } },
+        { name: "author", type: "text" },
+        { name: "authorRole", type: "text" },
+        { name: "authorInitials", type: "text" },
+        { name: "order", type: "number", defaultValue: 0, admin: { description: "Lower numbers show first" } },
+        seoGroup,
+      ],
+    },
+    {
       slug: "quotes",
       labels: { singular: "Quote", plural: "Quotes / Proposals" },
       admin: {
@@ -1596,6 +1639,7 @@ export default buildConfig({
       partners: seedPartners,
       projects: seedProjects,
       stats: seedStats,
+      caseStudies: seedCaseStudies,
     } = await import("@/lib/it-data");
     const { software: seedSoftware } = await import("@/lib/portal-data");
 
@@ -1636,6 +1680,32 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedServices.length} services`);
+    }
+
+    const { totalDocs: caseStudyCount } = await payload.count({ collection: "case-studies" });
+    if (caseStudyCount === 0) {
+      for (let i = 0; i < seedCaseStudies.length; i++) {
+        const c = seedCaseStudies[i];
+        await payload.create({
+          collection: "case-studies",
+          data: {
+            title: c.title,
+            slug: c.slug,
+            summary: c.summary,
+            mark: c.mark,
+            gradient: c.gradient,
+            tags: c.tags.map((tag) => ({ tag })),
+            metrics: c.metrics.map((m) => ({ k: m.k, v: m.v })),
+            sections: c.sections.map((s) => ({ head: s.head, body: s.body })),
+            quote: c.quote,
+            author: c.author,
+            authorRole: c.authorRole,
+            authorInitials: c.authorInitials,
+            order: i,
+          },
+        });
+      }
+      payload.logger.info(`Seeded ${seedCaseStudies.length} case studies`);
     }
 
     const { totalDocs: productCount } = await payload.count({

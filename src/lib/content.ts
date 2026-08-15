@@ -25,6 +25,8 @@ import {
   partners as fallbackPartners,
   projects as fallbackProjects,
   stats as fallbackStats,
+  caseStudies as fallbackCaseStudies,
+  type CaseStudy,
 } from "./it-data";
 
 type Testimonial = { quote: string; name: string; role: string };
@@ -235,6 +237,45 @@ export async function getHomeContent(): Promise<HomeContent> {
       },
     };
   }, homeDefaults);
+}
+
+/* ------------------------------ Case studies ----------------------------- */
+type Rec = Record<string, unknown>;
+const cstr = (v: unknown) => (v == null ? "" : String(v));
+
+function mapCaseStudy(d: unknown): CaseStudy {
+  const doc = d as Rec;
+  const arr = (v: unknown) => (Array.isArray(v) ? (v as Rec[]) : []);
+  return {
+    slug: cstr(doc.slug),
+    title: cstr(doc.title),
+    summary: cstr(doc.summary),
+    mark: cstr(doc.mark) || "+",
+    gradient: cstr(doc.gradient) || "linear-gradient(135deg,#3F3DCC,#5E5BFF)",
+    tags: arr(doc.tags).map((t) => cstr(t.tag)).filter(Boolean),
+    metrics: arr(doc.metrics).map((m) => ({ k: cstr(m.k), v: cstr(m.v) })),
+    sections: arr(doc.sections).map((s) => ({ head: cstr(s.head), body: cstr(s.body) })),
+    quote: cstr(doc.quote),
+    author: cstr(doc.author),
+    authorRole: cstr(doc.authorRole),
+    authorInitials: cstr(doc.authorInitials),
+  };
+}
+
+export async function getCaseStudies(): Promise<CaseStudy[]> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({ collection: "case-studies", sort: "order", limit: 100 });
+    if (!docs.length) return fallbackCaseStudies;
+    return docs.map(mapCaseStudy);
+  }, fallbackCaseStudies);
+}
+
+export async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({ collection: "case-studies", where: { slug: { equals: slug } }, limit: 1 });
+    if (docs.length) return mapCaseStudy(docs[0]);
+    return fallbackCaseStudies.find((c) => c.slug === slug) ?? null;
+  }, fallbackCaseStudies.find((c) => c.slug === slug) ?? null);
 }
 
 export async function getStats(): Promise<Stat[]> {
