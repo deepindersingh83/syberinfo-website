@@ -19,6 +19,7 @@ import * as migration_20260815_095614_homepage_content from './20260815_095614_h
 import * as migration_20260815_105304_case_studies from './20260815_105304_case_studies';
 import * as migration_20260815_114149_legal_pages from './20260815_114149_legal_pages';
 import * as migration_20260815_115028_page_content from './20260815_115028_page_content';
+import * as migration_20260815_163058_phase13_page_body from './20260815_163058_phase13_page_body';
 
 export const migrations = [
   {
@@ -124,6 +125,11 @@ export const migrations = [
   {
     up: migration_20260815_115028_page_content.up,
     down: migration_20260815_115028_page_content.down,
-    name: '20260815_115028_page_content'
+    name: '20260815_115028_page_content',
+  },
+  {
+    up: migration_20260815_163058_phase13_page_body.up,
+    down: migration_20260815_163058_phase13_page_body.down,
+    name: '20260815_163058_phase13_page_body'
   },
 ];

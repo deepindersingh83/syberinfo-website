@@ -1586,6 +1586,44 @@ export default buildConfig({
             { name: "subheading", type: "textarea" },
           ],
         },
+        {
+          name: "contact",
+          type: "group",
+          label: "Contact page",
+          admin: { description: "Copy on the /contact page. Phone & email come from Site Settings." },
+          fields: [
+            { name: "eyebrow", type: "text", admin: { description: "Small label above the heading" } },
+            { name: "heading", type: "text", admin: { description: "Main heading" } },
+            { name: "subheading", type: "textarea", admin: { description: "Lead paragraph under the heading" } },
+          ],
+        },
+        {
+          name: "about",
+          type: "group",
+          label: "About page body",
+          admin: { description: "Body copy on the /about page (below the header)." },
+          fields: [
+            {
+              name: "intro",
+              type: "array",
+              label: "Intro paragraphs",
+              admin: { description: "One or more paragraphs of intro copy." },
+              fields: [{ name: "text", type: "textarea", required: true }],
+            },
+            { name: "valuesHeading", type: "text", admin: { description: "Heading above the values grid" } },
+            { name: "timelineHeading", type: "text", admin: { description: "Heading above the timeline" } },
+            {
+              name: "timeline",
+              type: "array",
+              label: "Timeline",
+              admin: { description: "Milestones shown in 'The story so far'." },
+              fields: [
+                { name: "year", type: "text", required: true },
+                { name: "text", type: "textarea", required: true },
+              ],
+            },
+          ],
+        },
       ],
     },
     {
