@@ -14,6 +14,11 @@ import * as migration_20260813_181950_service_delivery from './20260813_181950_s
 import * as migration_20260813_183200_sales_crm from './20260813_183200_sales_crm';
 import * as migration_20260813_190228_rich_body from './20260813_190228_rich_body';
 import * as migration_20260813_200136_onboarding_status_subs from './20260813_200136_onboarding_status_subs';
+import * as migration_20260815_093013_site_settings from './20260815_093013_site_settings';
+import * as migration_20260815_095614_homepage_content from './20260815_095614_homepage_content';
+import * as migration_20260815_105304_case_studies from './20260815_105304_case_studies';
+import * as migration_20260815_114149_legal_pages from './20260815_114149_legal_pages';
+import * as migration_20260815_115028_page_content from './20260815_115028_page_content';
 
 export const migrations = [
   {
@@ -94,6 +99,31 @@ export const migrations = [
   {
     up: migration_20260813_200136_onboarding_status_subs.up,
     down: migration_20260813_200136_onboarding_status_subs.down,
-    name: '20260813_200136_onboarding_status_subs'
+    name: '20260813_200136_onboarding_status_subs',
+  },
+  {
+    up: migration_20260815_093013_site_settings.up,
+    down: migration_20260815_093013_site_settings.down,
+    name: '20260815_093013_site_settings',
+  },
+  {
+    up: migration_20260815_095614_homepage_content.up,
+    down: migration_20260815_095614_homepage_content.down,
+    name: '20260815_095614_homepage_content',
+  },
+  {
+    up: migration_20260815_105304_case_studies.up,
+    down: migration_20260815_105304_case_studies.down,
+    name: '20260815_105304_case_studies',
+  },
+  {
+    up: migration_20260815_114149_legal_pages.up,
+    down: migration_20260815_114149_legal_pages.down,
+    name: '20260815_114149_legal_pages',
+  },
+  {
+    up: migration_20260815_115028_page_content.up,
+    down: migration_20260815_115028_page_content.down,
+    name: '20260815_115028_page_content'
   },
 ];

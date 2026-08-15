@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import LegalLayout from "@/components/LegalLayout";
+import RichBody from "@/components/RichBody";
+import { getLegalPage } from "@/lib/content";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -7,7 +9,15 @@ export const metadata: Metadata = {
   description: "SyberInfo's approach to refunds for services and reseller products.",
 };
 
-export default function RefundPolicyPage() {
+export default async function RefundPolicyPage() {
+  const cms = await getLegalPage("refund-policy");
+  if (cms) {
+    return (
+      <LegalLayout title={cms.title || "Refund Policy"} updated="">
+        <RichBody data={cms.body} />
+      </LegalLayout>
+    );
+  }
   return (
     <LegalLayout title="Refund Policy" updated="June 2026">
       <p>

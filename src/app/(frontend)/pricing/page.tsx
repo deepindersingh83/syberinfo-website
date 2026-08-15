@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Aurora, SectionHeading, ButtonLink } from "@/components/ui";
 import PricingClient from "@/components/PricingClient";
 import CompareTable from "@/components/CompareTable";
-import { getPlans } from "@/lib/content";
+import { getPlans, getPageHeader } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Pricing & Packages",
@@ -13,19 +13,23 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
-  const plans = await getPlans();
+  const [plans, ph] = await Promise.all([getPlans(), getPageHeader("pricing")]);
   return (
     <div className="relative pt-36 pb-12">
       <Aurora />
       <div className="mx-auto max-w-7xl px-5">
         <SectionHeading
-          eyebrow="Pricing & packages"
+          eyebrow={ph.eyebrow}
           title={
-            <>
-              Simple, honest <span className="text-gradient">pricing</span>
-            </>
+            ph.heading ? (
+              ph.heading
+            ) : (
+              <>
+                Simple, honest <span className="text-gradient">pricing</span>
+              </>
+            )
           }
-          subtitle="Official Australian pricing on Google Workspace & Microsoft 365, plus flexible packages for websites and marketing."
+          subtitle={ph.subheading}
         />
 
         <PricingClient plans={plans} />

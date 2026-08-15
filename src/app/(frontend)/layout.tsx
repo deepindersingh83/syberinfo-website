@@ -10,6 +10,7 @@ import MobileCTA from "@/components/MobileCTA";
 import CookieConsent from "@/components/CookieConsent";
 import Attribution from "@/components/Attribution";
 import { site, ogImage } from "@/lib/site";
+import { getSettings } from "@/lib/settings";
 
 const display = Bricolage_Grotesque({
   variable: "--font-display",
@@ -68,31 +69,31 @@ export const metadata: Metadata = {
   alternates: { canonical: site.url },
 };
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": ["ProfessionalService", "LocalBusiness"],
-  name: site.name,
-  url: site.url,
-  email: site.email,
-  telephone: site.phone,
-  description: site.description,
-  areaServed: "AU",
-  address: { "@type": "PostalAddress", addressCountry: "AU" },
-  identifier: { "@type": "PropertyValue", propertyID: "ABN", value: site.abn },
-  sameAs: Object.values(site.social),
-  makesOffer: [
-    "Managed IT & Support",
-    "Cloud & Infrastructure",
-    "Cybersecurity",
-    "Backup & Recovery",
-    "Networks & VoIP",
-    "IT Strategy & vCIO",
-  ].map((name) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name } })),
-};
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const s = await getSettings();
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": ["ProfessionalService", "LocalBusiness"],
+    name: s.name,
+    url: site.url,
+    email: s.email,
+    telephone: s.phone,
+    description: s.description,
+    areaServed: "AU",
+    address: { "@type": "PostalAddress", streetAddress: s.address || undefined, addressCountry: "AU" },
+    identifier: { "@type": "PropertyValue", propertyID: "ABN", value: s.abn },
+    sameAs: [s.social.linkedin, s.social.twitter, s.social.github, s.social.facebook, s.social.instagram].filter(Boolean),
+    makesOffer: [
+      "Managed IT & Support",
+      "Cloud & Infrastructure",
+      "Cybersecurity",
+      "Backup & Recovery",
+      "Networks & VoIP",
+      "IT Strategy & vCIO",
+    ].map((name) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name } })),
+  };
   return (
     <html
       lang="en-AU"

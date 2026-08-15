@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import PageHeader from "@/components/PageHeader";
-import { getServices } from "@/lib/content";
+import { getServices, getPageHeader } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Services",
@@ -13,17 +13,21 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ServicesPage() {
-  const services = await getServices();
+  const [services, ph] = await Promise.all([getServices(), getPageHeader("services")]);
   return (
     <>
       <PageHeader
-        tag="SERVICES"
+        tag={ph.eyebrow}
         title={
-          <>
-            A full IT department, <span className="text-indigo">on tap</span>.
-          </>
+          ph.heading ? (
+            ph.heading
+          ) : (
+            <>
+              A full IT department, <span className="text-indigo">on tap</span>.
+            </>
+          )
         }
-        subtitle="Six core practices, one accountable team. Take one service or hand us the whole stack — either way, you get proactive engineers who know your business."
+        subtitle={ph.subheading}
       />
 
       <section className="relative z-[1] mx-auto max-w-[1240px] px-5 pb-24 pt-8 sm:px-10">

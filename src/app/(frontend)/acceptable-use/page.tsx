@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import LegalLayout from "@/components/LegalLayout";
+import RichBody from "@/components/RichBody";
+import { getLegalPage } from "@/lib/content";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -7,7 +9,15 @@ export const metadata: Metadata = {
   description: "Rules for acceptable use of SyberInfo's hosting and services.",
 };
 
-export default function AcceptableUsePage() {
+export default async function AcceptableUsePage() {
+  const cms = await getLegalPage("acceptable-use");
+  if (cms) {
+    return (
+      <LegalLayout title={cms.title || "Acceptable Use Policy"} updated="">
+        <RichBody data={cms.body} />
+      </LegalLayout>
+    );
+  }
   return (
     <LegalLayout title="Acceptable Use Policy" updated="June 2026">
       <p>

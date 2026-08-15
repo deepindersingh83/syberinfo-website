@@ -1162,6 +1162,75 @@ export default buildConfig({
       ],
     },
     {
+      slug: "legal-pages",
+      labels: { singular: "Legal Page", plural: "Legal Pages" },
+      admin: {
+        useAsTitle: "title",
+        group: "Content",
+        defaultColumns: ["title", "slug", "updatedAt"],
+        description: "Privacy, Terms, etc. Fill the body to override the built-in page text.",
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      fields: [
+        { name: "title", type: "text", required: true },
+        {
+          name: "slug",
+          type: "text",
+          required: true,
+          unique: true,
+          admin: { description: "Must match the page path: privacy, terms, acceptable-use, or refund-policy" },
+        },
+        {
+          name: "body",
+          type: "richText",
+          admin: { description: "Rich text. When set, it replaces the built-in page content." },
+        },
+      ],
+    },
+    {
+      slug: "case-studies",
+      labels: { singular: "Case Study", plural: "Case Studies" },
+      admin: {
+        useAsTitle: "title",
+        group: "Content",
+        defaultColumns: ["title", "slug", "order"],
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      defaultSort: "order",
+      fields: [
+        { name: "title", type: "text", required: true },
+        { name: "slug", type: "text", required: true, unique: true, admin: { description: "URL segment, e.g. clinic" } },
+        { name: "summary", type: "textarea", required: true, admin: { description: "Short card summary" } },
+        { name: "tags", type: "array", fields: [{ name: "tag", type: "text", required: true }] },
+        { name: "mark", type: "text", admin: { description: "Glyph shown on the card, e.g. + or ⚿" } },
+        { name: "gradient", type: "text", admin: { description: "CSS gradient for the card, e.g. linear-gradient(135deg,#3F3DCC,#5E5BFF)" } },
+        {
+          name: "metrics",
+          type: "array",
+          admin: { description: "Headline result numbers" },
+          fields: [
+            { name: "k", type: "text", required: true, admin: { description: "Value, e.g. 0 hrs" } },
+            { name: "v", type: "text", required: true, admin: { description: "Label, e.g. Downtime" } },
+          ],
+        },
+        {
+          name: "sections",
+          type: "array",
+          admin: { description: "The Challenge / What we did / The outcome blocks" },
+          fields: [
+            { name: "head", type: "text", required: true },
+            { name: "body", type: "textarea", required: true },
+          ],
+        },
+        { name: "quote", type: "textarea", admin: { description: "Client testimonial quote" } },
+        { name: "author", type: "text" },
+        { name: "authorRole", type: "text" },
+        { name: "authorInitials", type: "text" },
+        { name: "order", type: "number", defaultValue: 0, admin: { description: "Lower numbers show first" } },
+        seoGroup,
+      ],
+    },
+    {
       slug: "quotes",
       labels: { singular: "Quote", plural: "Quotes / Proposals" },
       admin: {
@@ -1471,6 +1540,112 @@ export default buildConfig({
             { name: "text", type: "textarea", required: true },
           ],
         },
+        {
+          name: "hero",
+          type: "group",
+          label: "Hero",
+          admin: { description: "The top section of the homepage. Blank fields use the built-in defaults." },
+          fields: [
+            { name: "eyebrow", type: "text", admin: { description: "Small pill above the heading, e.g. 'Now onboarding new clients · 2026'" } },
+            { name: "heading", type: "text", admin: { description: "Main H1. Plain text — overrides the styled default when set." } },
+            { name: "subheading", type: "textarea" },
+            { name: "ctaPrimaryLabel", type: "text" },
+            { name: "ctaPrimaryHref", type: "text" },
+            { name: "ctaSecondaryLabel", type: "text" },
+            { name: "ctaSecondaryHref", type: "text" },
+          ],
+        },
+        {
+          name: "closingCta",
+          type: "group",
+          label: "Closing call-to-action",
+          admin: { description: "The big indigo call-to-action band near the bottom of the homepage." },
+          fields: [
+            { name: "heading", type: "text" },
+            { name: "subheading", type: "textarea" },
+            { name: "buttonLabel", type: "text" },
+            { name: "buttonHref", type: "text" },
+          ],
+        },
+      ],
+    },
+    {
+      slug: "page-content",
+      label: "Page Headers",
+      admin: { group: "Content", description: "Eyebrow / heading / subheading for the top of each marketing page." },
+      access: { read: () => true, update: adminOnly },
+      fields: [
+        {
+          name: "headers",
+          type: "array",
+          admin: { description: "One row per page. 'page' must match the page key (about, careers, services, pricing)." },
+          fields: [
+            { name: "page", type: "text", required: true, admin: { description: "Page key: about, careers, services, pricing" } },
+            { name: "eyebrow", type: "text", admin: { description: "Small label above the heading" } },
+            { name: "heading", type: "text", admin: { description: "Plain text; overrides the styled default when set" } },
+            { name: "subheading", type: "textarea" },
+          ],
+        },
+      ],
+    },
+    {
+      slug: "site-settings",
+      label: "Site Settings",
+      admin: { group: "Content", description: "Brand, contact details, socials and footer — used site-wide." },
+      access: { read: () => true, update: adminOnly },
+      fields: [
+        {
+          type: "collapsible",
+          label: "Brand",
+          fields: [
+            { name: "name", type: "text", admin: { description: "e.g. SyberInfo" } },
+            { name: "legalName", type: "text", admin: { description: "e.g. SyberInfo Pty Ltd" } },
+            { name: "tagline", type: "text" },
+            { name: "description", type: "textarea", admin: { description: "Default meta description / brand blurb" } },
+          ],
+        },
+        {
+          type: "collapsible",
+          label: "Contact",
+          fields: [
+            { name: "email", type: "email" },
+            { name: "phone", type: "text", admin: { description: "Display phone, e.g. 1300 000 000" } },
+            { name: "phoneIntl", type: "text", admin: { description: "International format for tel: links, e.g. +61300000000" } },
+            { name: "address", type: "text" },
+            { name: "abn", type: "text" },
+            { name: "hours", type: "text", admin: { description: "e.g. Mon–Fri 8am–6pm AEST" } },
+            { name: "whatsapp", type: "text", admin: { description: "WhatsApp number, digits only; blank hides the button" } },
+          ],
+        },
+        {
+          name: "social",
+          type: "group",
+          label: "Social links",
+          fields: [
+            { name: "linkedin", type: "text" },
+            { name: "twitter", type: "text", label: "X / Twitter" },
+            { name: "github", type: "text" },
+            { name: "facebook", type: "text" },
+            { name: "instagram", type: "text" },
+          ],
+        },
+        {
+          name: "footerColumns",
+          type: "array",
+          label: "Footer columns",
+          admin: { description: "Footer link columns. Leave empty to use the built-in defaults." },
+          fields: [
+            { name: "heading", type: "text", required: true },
+            {
+              name: "links",
+              type: "array",
+              fields: [
+                { name: "label", type: "text", required: true },
+                { name: "href", type: "text", required: true },
+              ],
+            },
+          ],
+        },
       ],
     },
     {
@@ -1509,6 +1684,7 @@ export default buildConfig({
       partners: seedPartners,
       projects: seedProjects,
       stats: seedStats,
+      caseStudies: seedCaseStudies,
     } = await import("@/lib/it-data");
     const { software: seedSoftware } = await import("@/lib/portal-data");
 
@@ -1549,6 +1725,46 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedServices.length} services`);
+    }
+
+    const { totalDocs: caseStudyCount } = await payload.count({ collection: "case-studies" });
+    if (caseStudyCount === 0) {
+      for (let i = 0; i < seedCaseStudies.length; i++) {
+        const c = seedCaseStudies[i];
+        await payload.create({
+          collection: "case-studies",
+          data: {
+            title: c.title,
+            slug: c.slug,
+            summary: c.summary,
+            mark: c.mark,
+            gradient: c.gradient,
+            tags: c.tags.map((tag) => ({ tag })),
+            metrics: c.metrics.map((m) => ({ k: m.k, v: m.v })),
+            sections: c.sections.map((s) => ({ head: s.head, body: s.body })),
+            quote: c.quote,
+            author: c.author,
+            authorRole: c.authorRole,
+            authorInitials: c.authorInitials,
+            order: i,
+          },
+        });
+      }
+      payload.logger.info(`Seeded ${seedCaseStudies.length} case studies`);
+    }
+
+    const { totalDocs: legalCount } = await payload.count({ collection: "legal-pages" });
+    if (legalCount === 0) {
+      const legalSeeds = [
+        { title: "Privacy Policy", slug: "privacy" },
+        { title: "Terms of Service", slug: "terms" },
+        { title: "Acceptable Use Policy", slug: "acceptable-use" },
+        { title: "Refund Policy", slug: "refund-policy" },
+      ];
+      for (const l of legalSeeds) {
+        await payload.create({ collection: "legal-pages", data: { title: l.title, slug: l.slug } });
+      }
+      payload.logger.info("Seeded legal page placeholders (fill body to override built-in text)");
     }
 
     const { totalDocs: productCount } = await payload.count({
@@ -1747,6 +1963,39 @@ export default buildConfig({
         },
       });
       payload.logger.info("Seeded homepage content (stats & process)");
+    }
+
+    // Seed Site Settings from the bundled brand defaults on first run so
+    // editors see the current phone/email/etc. to edit (blank fields fall back
+    // to these same defaults anyway).
+    const settings = (await payload.findGlobal({ slug: "site-settings" })) as { email?: string };
+    if (!settings?.email) {
+      const { site: seedSite, footerCols: seedFooter } = await import("@/lib/site");
+      await payload.updateGlobal({
+        slug: "site-settings",
+        data: {
+          name: seedSite.name,
+          legalName: seedSite.legalName,
+          tagline: seedSite.tagline,
+          description: seedSite.description,
+          email: seedSite.email,
+          phone: seedSite.phone,
+          phoneIntl: seedSite.phoneIntl,
+          address: seedSite.address,
+          abn: seedSite.abn,
+          whatsapp: seedSite.whatsapp,
+          social: {
+            linkedin: seedSite.social.linkedin,
+            twitter: seedSite.social.twitter,
+            github: seedSite.social.github,
+          },
+          footerColumns: seedFooter.map((c) => ({
+            heading: c.head,
+            links: c.links.map((l) => ({ label: l.label, href: l.href })),
+          })),
+        },
+      });
+      payload.logger.info("Seeded site settings (brand, contact, social, footer)");
     }
 
     // Optional demo billing data for previewing the customer portal.

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LegalLayout from "@/components/LegalLayout";
+import RichBody from "@/components/RichBody";
+import { getLegalPage } from "@/lib/content";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -9,7 +11,15 @@ export const metadata: Metadata = {
     "How SyberInfo collects, uses and protects your personal information, in line with the Australian Privacy Act 1988.",
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const cms = await getLegalPage("privacy");
+  if (cms) {
+    return (
+      <LegalLayout title={cms.title || "Privacy Policy"} updated="">
+        <RichBody data={cms.body} />
+      </LegalLayout>
+    );
+  }
   return (
     <LegalLayout title="Privacy Policy" updated="June 2026">
       <p>

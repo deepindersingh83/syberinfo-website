@@ -25,6 +25,8 @@ import {
   partners as fallbackPartners,
   projects as fallbackProjects,
   stats as fallbackStats,
+  caseStudies as fallbackCaseStudies,
+  type CaseStudy,
 } from "./it-data";
 
 type Testimonial = { quote: string; name: string; role: string };
@@ -176,6 +178,160 @@ export async function getProduct(slug: string): Promise<Product | null> {
     if (docs.length) return mapProduct(docs[0]);
     return fallbackProducts.find((p) => p.slug === slug) ?? null;
   }, fallbackProducts.find((p) => p.slug === slug) ?? null);
+}
+
+export type HomeContent = {
+  hero: {
+    eyebrow: string;
+    heading: string; // empty = use the styled default in the page
+    subheading: string;
+    ctaPrimaryLabel: string;
+    ctaPrimaryHref: string;
+    ctaSecondaryLabel: string;
+    ctaSecondaryHref: string;
+  };
+  closingCta: { heading: string; subheading: string; buttonLabel: string; buttonHref: string };
+};
+
+const homeDefaults: HomeContent = {
+  hero: {
+    eyebrow: "Now onboarding new clients · 2026",
+    heading: "",
+    subheading:
+      "Managed IT, cloud, and cybersecurity for growing Australian businesses. We handle the infrastructure, the threats, and the 2am alerts — so your team never has to think about any of it.",
+    ctaPrimaryLabel: "Get a free IT audit →",
+    ctaPrimaryHref: "/book",
+    ctaSecondaryLabel: "Explore services",
+    ctaSecondaryHref: "/services",
+  },
+  closingCta: {
+    heading: "Let’s get your IT off your plate.",
+    subheading:
+      "Book a free 30-minute audit. We’ll map your current setup, flag the risks, and show you exactly what we’d do — no obligation.",
+    buttonLabel: "Book a free audit",
+    buttonHref: "/book",
+  },
+};
+
+export async function getHomeContent(): Promise<HomeContent> {
+  return tryPayload(async (payload) => {
+    const g = (await payload.findGlobal({ slug: "site-content" })) as unknown as Record<string, unknown>;
+    const h = (g.hero as Record<string, unknown>) || {};
+    const c = (g.closingCta as Record<string, unknown>) || {};
+    const s = (v: unknown, fb: string) => (v == null || String(v).trim() === "" ? fb : String(v));
+    return {
+      hero: {
+        eyebrow: s(h.eyebrow, homeDefaults.hero.eyebrow),
+        heading: s(h.heading, homeDefaults.hero.heading),
+        subheading: s(h.subheading, homeDefaults.hero.subheading),
+        ctaPrimaryLabel: s(h.ctaPrimaryLabel, homeDefaults.hero.ctaPrimaryLabel),
+        ctaPrimaryHref: s(h.ctaPrimaryHref, homeDefaults.hero.ctaPrimaryHref),
+        ctaSecondaryLabel: s(h.ctaSecondaryLabel, homeDefaults.hero.ctaSecondaryLabel),
+        ctaSecondaryHref: s(h.ctaSecondaryHref, homeDefaults.hero.ctaSecondaryHref),
+      },
+      closingCta: {
+        heading: s(c.heading, homeDefaults.closingCta.heading),
+        subheading: s(c.subheading, homeDefaults.closingCta.subheading),
+        buttonLabel: s(c.buttonLabel, homeDefaults.closingCta.buttonLabel),
+        buttonHref: s(c.buttonHref, homeDefaults.closingCta.buttonHref),
+      },
+    };
+  }, homeDefaults);
+}
+
+/* ------------------------------ Case studies ----------------------------- */
+type Rec = Record<string, unknown>;
+const cstr = (v: unknown) => (v == null ? "" : String(v));
+
+function mapCaseStudy(d: unknown): CaseStudy {
+  const doc = d as Rec;
+  const arr = (v: unknown) => (Array.isArray(v) ? (v as Rec[]) : []);
+  return {
+    slug: cstr(doc.slug),
+    title: cstr(doc.title),
+    summary: cstr(doc.summary),
+    mark: cstr(doc.mark) || "+",
+    gradient: cstr(doc.gradient) || "linear-gradient(135deg,#3F3DCC,#5E5BFF)",
+    tags: arr(doc.tags).map((t) => cstr(t.tag)).filter(Boolean),
+    metrics: arr(doc.metrics).map((m) => ({ k: cstr(m.k), v: cstr(m.v) })),
+    sections: arr(doc.sections).map((s) => ({ head: cstr(s.head), body: cstr(s.body) })),
+    quote: cstr(doc.quote),
+    author: cstr(doc.author),
+    authorRole: cstr(doc.authorRole),
+    authorInitials: cstr(doc.authorInitials),
+  };
+}
+
+export async function getCaseStudies(): Promise<CaseStudy[]> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({ collection: "case-studies", sort: "order", limit: 100 });
+    if (!docs.length) return fallbackCaseStudies;
+    return docs.map(mapCaseStudy);
+  }, fallbackCaseStudies);
+}
+
+export async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({ collection: "case-studies", where: { slug: { equals: slug } }, limit: 1 });
+    if (docs.length) return mapCaseStudy(docs[0]);
+    return fallbackCaseStudies.find((c) => c.slug === slug) ?? null;
+  }, fallbackCaseStudies.find((c) => c.slug === slug) ?? null);
+}
+
+/* ------------------------------ Page headers ----------------------------- */
+export type PageHeaderContent = { eyebrow: string; heading: string; subheading: string };
+
+const pageHeaderDefaults: Record<string, PageHeaderContent> = {
+  about: {
+    eyebrow: "WHO WE ARE",
+    heading: "",
+    subheading:
+      "Founded in Melbourne in 2015, SyberInfo grew out of a simple frustration: IT support that only shows up when something's already broken. We flipped the model.",
+  },
+  careers: {
+    eyebrow: "CAREERS",
+    heading: "",
+    subheading:
+      "We're a small Melbourne team that believes great support comes from engineers who are rested, trusted and genuinely cared for.",
+  },
+  services: {
+    eyebrow: "SERVICES",
+    heading: "",
+    subheading:
+      "Six core practices, one accountable team. Take one service or hand us the whole stack — either way, you get proactive engineers who know your business.",
+  },
+  pricing: {
+    eyebrow: "Pricing & packages",
+    heading: "",
+    subheading:
+      "Official Australian pricing on Google Workspace & Microsoft 365, plus flexible packages for websites and marketing.",
+  },
+};
+
+export async function getPageHeader(page: string): Promise<PageHeaderContent> {
+  const fb = pageHeaderDefaults[page] ?? { eyebrow: "", heading: "", subheading: "" };
+  return tryPayload(async (payload) => {
+    const g = (await payload.findGlobal({ slug: "page-content" })) as unknown as Record<string, unknown>;
+    const rows = Array.isArray(g.headers) ? (g.headers as Record<string, unknown>[]) : [];
+    const row = rows.find((r) => String(r.page).trim() === page);
+    if (!row) return fb;
+    const s = (v: unknown, d: string) => (v == null || String(v).trim() === "" ? d : String(v));
+    return {
+      eyebrow: s(row.eyebrow, fb.eyebrow),
+      heading: s(row.heading, fb.heading),
+      subheading: s(row.subheading, fb.subheading),
+    };
+  }, fb);
+}
+
+/* ------------------------------ Legal pages ------------------------------ */
+export async function getLegalPage(slug: string): Promise<{ title: string; body: unknown } | null> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({ collection: "legal-pages", where: { slug: { equals: slug } }, limit: 1 });
+    const doc = docs[0] as unknown as Record<string, unknown> | undefined;
+    if (!doc || !hasRichText(doc.body)) return null;
+    return { title: String(doc.title ?? ""), body: doc.body };
+  }, null);
 }
 
 export async function getStats(): Promise<Stat[]> {

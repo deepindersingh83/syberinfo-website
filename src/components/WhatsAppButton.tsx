@@ -1,10 +1,11 @@
-import { site } from "@/lib/site";
+import { getSettings } from "@/lib/settings";
 
-/** Floating WhatsApp button. Hidden unless site.whatsapp is configured. */
-export default function WhatsAppButton() {
-  if (!site.whatsapp) return null;
-  const href = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(
-    "Hi SyberInfo, I'd like to chat about ",
+/** Floating WhatsApp button. Hidden unless a WhatsApp number is set in Site Settings. */
+export default async function WhatsAppButton() {
+  const s = await getSettings();
+  if (!s.whatsapp) return null;
+  const href = `https://wa.me/${s.whatsapp}?text=${encodeURIComponent(
+    `Hi ${s.name}, I'd like to chat about `,
   )}`;
   return (
     <a

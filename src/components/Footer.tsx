@@ -1,13 +1,17 @@
 import Link from "next/link";
-import { footerCols, legalNav, site } from "@/lib/site";
+import { legalNav, site } from "@/lib/site";
+import { getSettings } from "@/lib/settings";
 
-const socials = [
-  { label: "in", href: site.social.linkedin },
-  { label: "X", href: site.social.twitter },
-  { label: "gh", href: site.social.github },
-];
-
-export default function Footer() {
+export default async function Footer() {
+  const s = await getSettings();
+  const socials = [
+    { label: "in", href: s.social.linkedin },
+    { label: "X", href: s.social.twitter },
+    { label: "gh", href: s.social.github },
+    { label: "fb", href: s.social.facebook },
+    { label: "ig", href: s.social.instagram },
+  ].filter((x) => x.href);
+  const footerCols = s.footerColumns.map((c) => ({ head: c.heading, links: c.links }));
   return (
     <footer className="relative z-[1] overflow-hidden border-t border-white/[.06] bg-[linear-gradient(180deg,rgba(255,255,255,.012),rgba(94,91,255,.05))]">
       <div className="mx-auto max-w-[1240px] px-5 pt-[76px] sm:px-10">
@@ -19,7 +23,7 @@ export default function Footer() {
                 S
               </span>
               <span className="font-display text-[19px] font-bold tracking-[-.02em]">
-                SyberInfo
+                {s.name}
               </span>
             </div>
             <p className="mb-5 max-w-[30ch] text-sm leading-relaxed text-muted-2">
@@ -89,7 +93,7 @@ export default function Footer() {
       <div className="relative z-[1] border-t border-white/[.06] bg-ink-950">
         <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-[18px] px-5 py-[22px] font-mono text-xs text-faint sm:px-10">
           <span>
-            © {new Date().getFullYear()} {site.legalName} · ABN {site.abn}
+            © {new Date().getFullYear()} {s.legalName} · ABN {s.abn}
           </span>
           <span className="inline-flex gap-[22px]">
             {legalNav.map((l) => (

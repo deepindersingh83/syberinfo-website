@@ -4,7 +4,8 @@ import StatCounter from "@/components/StatCounter";
 import FaqAccordion from "@/components/FaqAccordion";
 import LeadForm from "@/components/LeadForm";
 import JsonLd, { faqJsonLd } from "@/components/JsonLd";
-import { getServices, getStats } from "@/lib/content";
+import { getServices, getStats, getHomeContent } from "@/lib/content";
+import { getSettings } from "@/lib/settings";
 import {
   testimonials,
   planTiers,
@@ -13,7 +14,6 @@ import {
   clientLogos,
   values,
   caseStudies,
-  contactMethods,
 } from "@/lib/it-data";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,19 @@ const SectionTag = ({ children }: { children: React.ReactNode }) => (
 );
 
 export default async function Home() {
-  const [services, stats] = await Promise.all([getServices(), getStats()]);
+  const [services, stats, home, settings] = await Promise.all([
+    getServices(),
+    getStats(),
+    getHomeContent(),
+    getSettings(),
+  ]);
+  const hero = home.hero;
+  const cta = home.closingCta;
+  const contactMethods = [
+    { glyph: "✉", label: "EMAIL US", value: settings.email, href: `mailto:${settings.email}` },
+    { glyph: "☎", label: "CALL THE HELPDESK", value: settings.phone, href: `tel:${settings.phoneIntl || settings.phone}` },
+    { glyph: "◈", label: "ALREADY A CLIENT?", value: "Open the client portal", href: "/portal" },
+  ];
   const loopLogos = [...clientLogos, ...clientLogos];
   const loopMarquee = [...marquee, ...marquee];
 
@@ -38,33 +50,37 @@ export default async function Home() {
         <div className="grid-bg animate-grid pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_80%_60%_at_50%_30%,#000,transparent_75%)]" />
         <div className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-white/[.12] bg-white/[.03] px-[15px] py-[7px] font-mono text-[12.5px] tracking-[.02em] text-lime">
           <span className="h-[7px] w-[7px] rounded-full bg-lime shadow-[0_0_10px_#c9f25e]" />
-          Now onboarding new clients · 2026
+          {hero.eyebrow}
         </div>
         <h1 className="max-w-[15ch] font-display text-[clamp(44px,7vw,92px)] font-bold leading-[.98] tracking-[-.035em]">
-          IT that quietly <span className="text-indigo">runs</span> while you{" "}
-          <span className="relative whitespace-nowrap">
-            build
-            <span className="absolute inset-x-0 bottom-1.5 -z-10 h-2.5 rounded-sm bg-lime/[.35]" />
-          </span>
-          .
+          {hero.heading ? (
+            hero.heading
+          ) : (
+            <>
+              IT that quietly <span className="text-indigo">runs</span> while you{" "}
+              <span className="relative whitespace-nowrap">
+                build
+                <span className="absolute inset-x-0 bottom-1.5 -z-10 h-2.5 rounded-sm bg-lime/[.35]" />
+              </span>
+              .
+            </>
+          )}
         </h1>
         <p className="mt-[30px] max-w-[54ch] text-[clamp(17px,2vw,20px)] leading-[1.55] text-muted">
-          Managed IT, cloud, and cybersecurity for growing Australian
-          businesses. We handle the infrastructure, the threats, and the 2am
-          alerts — so your team never has to think about any of it.
+          {hero.subheading}
         </p>
         <div className="mt-[42px] flex flex-wrap items-center gap-4">
           <Link
-            href="/book"
+            href={hero.ctaPrimaryHref}
             className="inline-flex items-center gap-2.5 rounded-full bg-indigo px-7 py-[15px] text-[15.5px] font-semibold text-white shadow-[0_8px_30px_rgba(94,91,255,.4)] transition-transform hover:-translate-y-0.5"
           >
-            Get a free IT audit →
+            {hero.ctaPrimaryLabel}
           </Link>
           <Link
-            href="/services"
+            href={hero.ctaSecondaryHref}
             className="inline-flex items-center gap-2.5 rounded-full border border-white/[.16] px-6 py-[15px] text-[15.5px] font-medium text-foreground transition-colors hover:bg-white/[.06]"
           >
-            Explore services
+            {hero.ctaSecondaryLabel}
           </Link>
         </div>
       </header>
@@ -375,26 +391,26 @@ export default async function Home() {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,.18),transparent_40%),radial-gradient(circle_at_85%_80%,rgba(201,242,94,.22),transparent_45%)]" />
           <div className="relative">
             <h2 className="mx-auto mb-5 max-w-[18ch] font-display text-[clamp(32px,5vw,60px)] font-bold leading-[1.02] tracking-[-.03em] text-white">
-              Let&rsquo;s get your IT off your plate.
+              {cta.heading}
             </h2>
             <p className="mx-auto mb-9 max-w-[48ch] text-[17px] leading-[1.55] text-white/80">
-              Book a free 30-minute audit. We&rsquo;ll map your current setup,
-              flag the risks, and show you exactly what we&rsquo;d do — no
-              obligation.
+              {cta.subheading}
             </p>
             <div className="flex flex-wrap justify-center gap-3.5">
               <Link
-                href="/book"
+                href={cta.buttonHref}
                 className="rounded-full bg-ink-950 px-8 py-4 text-[15.5px] font-semibold text-white transition-transform hover:-translate-y-0.5"
               >
-                Book a free audit
+                {cta.buttonLabel}
               </Link>
-              <a
-                href="tel:+61300000000"
-                className="rounded-full bg-white/[.16] px-8 py-4 text-[15.5px] font-semibold text-white backdrop-blur-sm"
-              >
-                Call 1300 000 000
-              </a>
+              {settings.phone && (
+                <a
+                  href={`tel:${settings.phoneIntl || settings.phone}`}
+                  className="rounded-full bg-white/[.16] px-8 py-4 text-[15.5px] font-semibold text-white backdrop-blur-sm"
+                >
+                  Call {settings.phone}
+                </a>
+              )}
             </div>
           </div>
         </Reveal>

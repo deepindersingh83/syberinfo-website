@@ -91,6 +91,8 @@ export interface Config {
     'client-domains': ClientDomain;
     tickets: Ticket;
     coupons: Coupon;
+    'legal-pages': LegalPage;
+    'case-studies': CaseStudy;
     quotes: Quote;
     'system-components': SystemComponent;
     incidents: Incident;
@@ -127,6 +129,8 @@ export interface Config {
     'client-domains': ClientDomainsSelect<false> | ClientDomainsSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
     coupons: CouponsSelect<false> | CouponsSelect<true>;
+    'legal-pages': LegalPagesSelect<false> | LegalPagesSelect<true>;
+    'case-studies': CaseStudiesSelect<false> | CaseStudiesSelect<true>;
     quotes: QuotesSelect<false> | QuotesSelect<true>;
     'system-components': SystemComponentsSelect<false> | SystemComponentsSelect<true>;
     incidents: IncidentsSelect<false> | IncidentsSelect<true>;
@@ -144,10 +148,14 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'site-content': SiteContent;
+    'page-content': PageContent;
+    'site-settings': SiteSetting;
     'billing-settings': BillingSetting;
   };
   globalsSelect: {
     'site-content': SiteContentSelect<false> | SiteContentSelect<true>;
+    'page-content': PageContentSelect<false> | PageContentSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'billing-settings': BillingSettingsSelect<false> | BillingSettingsSelect<true>;
   };
   locale: null;
@@ -1013,6 +1021,134 @@ export interface Coupon {
   createdAt: string;
 }
 /**
+ * Privacy, Terms, etc. Fill the body to override the built-in page text.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "legal-pages".
+ */
+export interface LegalPage {
+  id: number;
+  title: string;
+  /**
+   * Must match the page path: privacy, terms, acceptable-use, or refund-policy
+   */
+  slug: string;
+  /**
+   * Rich text. When set, it replaces the built-in page content.
+   */
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "case-studies".
+ */
+export interface CaseStudy {
+  id: number;
+  title: string;
+  /**
+   * URL segment, e.g. clinic
+   */
+  slug: string;
+  /**
+   * Short card summary
+   */
+  summary: string;
+  tags?:
+    | {
+        tag: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Glyph shown on the card, e.g. + or ⚿
+   */
+  mark?: string | null;
+  /**
+   * CSS gradient for the card, e.g. linear-gradient(135deg,#3F3DCC,#5E5BFF)
+   */
+  gradient?: string | null;
+  /**
+   * Headline result numbers
+   */
+  metrics?:
+    | {
+        /**
+         * Value, e.g. 0 hrs
+         */
+        k: string;
+        /**
+         * Label, e.g. Downtime
+         */
+        v: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The Challenge / What we did / The outcome blocks
+   */
+  sections?:
+    | {
+        head: string;
+        body: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Client testimonial quote
+   */
+  quote?: string | null;
+  author?: string | null;
+  authorRole?: string | null;
+  authorInitials?: string | null;
+  /**
+   * Lower numbers show first
+   */
+  order?: number | null;
+  /**
+   * Optional search / social overrides. Leave blank to use the page defaults.
+   */
+  seo?: {
+    /**
+     * Overrides the <title> (≤ 60 chars ideal)
+     */
+    metaTitle?: string | null;
+    /**
+     * Overrides the meta description (≤ 155 chars ideal)
+     */
+    metaDescription?: string | null;
+    /**
+     * Social share image (og:image)
+     */
+    ogImage?: (number | null) | Media;
+    /**
+     * Absolute canonical URL, if different from this page
+     */
+    canonical?: string | null;
+    /**
+     * Hide this page from search engines
+     */
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "quotes".
  */
@@ -1289,6 +1425,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'coupons';
         value: number | Coupon;
+      } | null)
+    | ({
+        relationTo: 'legal-pages';
+        value: number | LegalPage;
+      } | null)
+    | ({
+        relationTo: 'case-studies';
+        value: number | CaseStudy;
       } | null)
     | ({
         relationTo: 'quotes';
@@ -1922,6 +2066,64 @@ export interface CouponsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "legal-pages_select".
+ */
+export interface LegalPagesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  body?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "case-studies_select".
+ */
+export interface CaseStudiesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  summary?: T;
+  tags?:
+    | T
+    | {
+        tag?: T;
+        id?: T;
+      };
+  mark?: T;
+  gradient?: T;
+  metrics?:
+    | T
+    | {
+        k?: T;
+        v?: T;
+        id?: T;
+      };
+  sections?:
+    | T
+    | {
+        head?: T;
+        body?: T;
+        id?: T;
+      };
+  quote?: T;
+  author?: T;
+  authorRole?: T;
+  authorInitials?: T;
+  order?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        canonical?: T;
+        noindex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "quotes_select".
  */
 export interface QuotesSelect<T extends boolean = true> {
@@ -2090,6 +2292,131 @@ export interface SiteContent {
         id?: string | null;
       }[]
     | null;
+  /**
+   * The top section of the homepage. Blank fields use the built-in defaults.
+   */
+  hero?: {
+    /**
+     * Small pill above the heading, e.g. 'Now onboarding new clients · 2026'
+     */
+    eyebrow?: string | null;
+    /**
+     * Main H1. Plain text — overrides the styled default when set.
+     */
+    heading?: string | null;
+    subheading?: string | null;
+    ctaPrimaryLabel?: string | null;
+    ctaPrimaryHref?: string | null;
+    ctaSecondaryLabel?: string | null;
+    ctaSecondaryHref?: string | null;
+  };
+  /**
+   * The big indigo call-to-action band near the bottom of the homepage.
+   */
+  closingCta?: {
+    heading?: string | null;
+    subheading?: string | null;
+    buttonLabel?: string | null;
+    buttonHref?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Eyebrow / heading / subheading for the top of each marketing page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-content".
+ */
+export interface PageContent {
+  id: number;
+  /**
+   * One row per page. 'page' must match the page key (about, careers, services, pricing).
+   */
+  headers?:
+    | {
+        /**
+         * Page key: about, careers, services, pricing
+         */
+        page: string;
+        /**
+         * Small label above the heading
+         */
+        eyebrow?: string | null;
+        /**
+         * Plain text; overrides the styled default when set
+         */
+        heading?: string | null;
+        subheading?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Brand, contact details, socials and footer — used site-wide.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  /**
+   * e.g. SyberInfo
+   */
+  name?: string | null;
+  /**
+   * e.g. SyberInfo Pty Ltd
+   */
+  legalName?: string | null;
+  tagline?: string | null;
+  /**
+   * Default meta description / brand blurb
+   */
+  description?: string | null;
+  email?: string | null;
+  /**
+   * Display phone, e.g. 1300 000 000
+   */
+  phone?: string | null;
+  /**
+   * International format for tel: links, e.g. +61300000000
+   */
+  phoneIntl?: string | null;
+  address?: string | null;
+  abn?: string | null;
+  /**
+   * e.g. Mon–Fri 8am–6pm AEST
+   */
+  hours?: string | null;
+  /**
+   * WhatsApp number, digits only; blank hides the button
+   */
+  whatsapp?: string | null;
+  social?: {
+    linkedin?: string | null;
+    twitter?: string | null;
+    github?: string | null;
+    facebook?: string | null;
+    instagram?: string | null;
+  };
+  /**
+   * Footer link columns. Leave empty to use the built-in defaults.
+   */
+  footerColumns?:
+    | {
+        heading: string;
+        links?:
+          | {
+              label: string;
+              href: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2133,6 +2460,85 @@ export interface SiteContentSelect<T extends boolean = true> {
     | {
         title?: T;
         text?: T;
+        id?: T;
+      };
+  hero?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        subheading?: T;
+        ctaPrimaryLabel?: T;
+        ctaPrimaryHref?: T;
+        ctaSecondaryLabel?: T;
+        ctaSecondaryHref?: T;
+      };
+  closingCta?:
+    | T
+    | {
+        heading?: T;
+        subheading?: T;
+        buttonLabel?: T;
+        buttonHref?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-content_select".
+ */
+export interface PageContentSelect<T extends boolean = true> {
+  headers?:
+    | T
+    | {
+        page?: T;
+        eyebrow?: T;
+        heading?: T;
+        subheading?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  name?: T;
+  legalName?: T;
+  tagline?: T;
+  description?: T;
+  email?: T;
+  phone?: T;
+  phoneIntl?: T;
+  address?: T;
+  abn?: T;
+  hours?: T;
+  whatsapp?: T;
+  social?:
+    | T
+    | {
+        linkedin?: T;
+        twitter?: T;
+        github?: T;
+        facebook?: T;
+        instagram?: T;
+      };
+  footerColumns?:
+    | T
+    | {
+        heading?: T;
+        links?:
+          | T
+          | {
+              label?: T;
+              href?: T;
+              id?: T;
+            };
         id?: T;
       };
   updatedAt?: T;
