@@ -1474,6 +1474,66 @@ export default buildConfig({
       ],
     },
     {
+      slug: "site-settings",
+      label: "Site Settings",
+      admin: { group: "Content", description: "Brand, contact details, socials and footer — used site-wide." },
+      access: { read: () => true, update: adminOnly },
+      fields: [
+        {
+          type: "collapsible",
+          label: "Brand",
+          fields: [
+            { name: "name", type: "text", admin: { description: "e.g. SyberInfo" } },
+            { name: "legalName", type: "text", admin: { description: "e.g. SyberInfo Pty Ltd" } },
+            { name: "tagline", type: "text" },
+            { name: "description", type: "textarea", admin: { description: "Default meta description / brand blurb" } },
+          ],
+        },
+        {
+          type: "collapsible",
+          label: "Contact",
+          fields: [
+            { name: "email", type: "email" },
+            { name: "phone", type: "text", admin: { description: "Display phone, e.g. 1300 000 000" } },
+            { name: "phoneIntl", type: "text", admin: { description: "International format for tel: links, e.g. +61300000000" } },
+            { name: "address", type: "text" },
+            { name: "abn", type: "text" },
+            { name: "hours", type: "text", admin: { description: "e.g. Mon–Fri 8am–6pm AEST" } },
+            { name: "whatsapp", type: "text", admin: { description: "WhatsApp number, digits only; blank hides the button" } },
+          ],
+        },
+        {
+          name: "social",
+          type: "group",
+          label: "Social links",
+          fields: [
+            { name: "linkedin", type: "text" },
+            { name: "twitter", type: "text", label: "X / Twitter" },
+            { name: "github", type: "text" },
+            { name: "facebook", type: "text" },
+            { name: "instagram", type: "text" },
+          ],
+        },
+        {
+          name: "footerColumns",
+          type: "array",
+          label: "Footer columns",
+          admin: { description: "Footer link columns. Leave empty to use the built-in defaults." },
+          fields: [
+            { name: "heading", type: "text", required: true },
+            {
+              name: "links",
+              type: "array",
+              fields: [
+                { name: "label", type: "text", required: true },
+                { name: "href", type: "text", required: true },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
       slug: "billing-settings",
       label: "Billing Settings",
       admin: { group: "Billing" },
@@ -1747,6 +1807,39 @@ export default buildConfig({
         },
       });
       payload.logger.info("Seeded homepage content (stats & process)");
+    }
+
+    // Seed Site Settings from the bundled brand defaults on first run so
+    // editors see the current phone/email/etc. to edit (blank fields fall back
+    // to these same defaults anyway).
+    const settings = (await payload.findGlobal({ slug: "site-settings" })) as { email?: string };
+    if (!settings?.email) {
+      const { site: seedSite, footerCols: seedFooter } = await import("@/lib/site");
+      await payload.updateGlobal({
+        slug: "site-settings",
+        data: {
+          name: seedSite.name,
+          legalName: seedSite.legalName,
+          tagline: seedSite.tagline,
+          description: seedSite.description,
+          email: seedSite.email,
+          phone: seedSite.phone,
+          phoneIntl: seedSite.phoneIntl,
+          address: seedSite.address,
+          abn: seedSite.abn,
+          whatsapp: seedSite.whatsapp,
+          social: {
+            linkedin: seedSite.social.linkedin,
+            twitter: seedSite.social.twitter,
+            github: seedSite.social.github,
+          },
+          footerColumns: seedFooter.map((c) => ({
+            heading: c.head,
+            links: c.links.map((l) => ({ label: l.label, href: l.href })),
+          })),
+        },
+      });
+      payload.logger.info("Seeded site settings (brand, contact, social, footer)");
     }
 
     // Optional demo billing data for previewing the customer portal.

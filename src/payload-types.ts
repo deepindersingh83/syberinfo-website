@@ -144,10 +144,12 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'site-content': SiteContent;
+    'site-settings': SiteSetting;
     'billing-settings': BillingSetting;
   };
   globalsSelect: {
     'site-content': SiteContentSelect<false> | SiteContentSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'billing-settings': BillingSettingsSelect<false> | BillingSettingsSelect<true>;
   };
   locale: null;
@@ -2094,6 +2096,72 @@ export interface SiteContent {
   createdAt?: string | null;
 }
 /**
+ * Brand, contact details, socials and footer — used site-wide.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  /**
+   * e.g. SyberInfo
+   */
+  name?: string | null;
+  /**
+   * e.g. SyberInfo Pty Ltd
+   */
+  legalName?: string | null;
+  tagline?: string | null;
+  /**
+   * Default meta description / brand blurb
+   */
+  description?: string | null;
+  email?: string | null;
+  /**
+   * Display phone, e.g. 1300 000 000
+   */
+  phone?: string | null;
+  /**
+   * International format for tel: links, e.g. +61300000000
+   */
+  phoneIntl?: string | null;
+  address?: string | null;
+  abn?: string | null;
+  /**
+   * e.g. Mon–Fri 8am–6pm AEST
+   */
+  hours?: string | null;
+  /**
+   * WhatsApp number, digits only; blank hides the button
+   */
+  whatsapp?: string | null;
+  social?: {
+    linkedin?: string | null;
+    twitter?: string | null;
+    github?: string | null;
+    facebook?: string | null;
+    instagram?: string | null;
+  };
+  /**
+   * Footer link columns. Leave empty to use the built-in defaults.
+   */
+  footerColumns?:
+    | {
+        heading: string;
+        links?:
+          | {
+              label: string;
+              href: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "billing-settings".
  */
@@ -2133,6 +2201,48 @@ export interface SiteContentSelect<T extends boolean = true> {
     | {
         title?: T;
         text?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  name?: T;
+  legalName?: T;
+  tagline?: T;
+  description?: T;
+  email?: T;
+  phone?: T;
+  phoneIntl?: T;
+  address?: T;
+  abn?: T;
+  hours?: T;
+  whatsapp?: T;
+  social?:
+    | T
+    | {
+        linkedin?: T;
+        twitter?: T;
+        github?: T;
+        facebook?: T;
+        instagram?: T;
+      };
+  footerColumns?:
+    | T
+    | {
+        heading?: T;
+        links?:
+          | T
+          | {
+              label?: T;
+              href?: T;
+              id?: T;
+            };
         id?: T;
       };
   updatedAt?: T;
