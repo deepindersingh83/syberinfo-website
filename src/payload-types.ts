@@ -91,6 +91,7 @@ export interface Config {
     'client-domains': ClientDomain;
     tickets: Ticket;
     coupons: Coupon;
+    'legal-pages': LegalPage;
     'case-studies': CaseStudy;
     quotes: Quote;
     'system-components': SystemComponent;
@@ -128,6 +129,7 @@ export interface Config {
     'client-domains': ClientDomainsSelect<false> | ClientDomainsSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
     coupons: CouponsSelect<false> | CouponsSelect<true>;
+    'legal-pages': LegalPagesSelect<false> | LegalPagesSelect<true>;
     'case-studies': CaseStudiesSelect<false> | CaseStudiesSelect<true>;
     quotes: QuotesSelect<false> | QuotesSelect<true>;
     'system-components': SystemComponentsSelect<false> | SystemComponentsSelect<true>;
@@ -1017,6 +1019,40 @@ export interface Coupon {
   createdAt: string;
 }
 /**
+ * Privacy, Terms, etc. Fill the body to override the built-in page text.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "legal-pages".
+ */
+export interface LegalPage {
+  id: number;
+  title: string;
+  /**
+   * Must match the page path: privacy, terms, acceptable-use, or refund-policy
+   */
+  slug: string;
+  /**
+   * Rich text. When set, it replaces the built-in page content.
+   */
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "case-studies".
  */
@@ -1387,6 +1423,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'coupons';
         value: number | Coupon;
+      } | null)
+    | ({
+        relationTo: 'legal-pages';
+        value: number | LegalPage;
       } | null)
     | ({
         relationTo: 'case-studies';
@@ -2019,6 +2059,17 @@ export interface CouponsSelect<T extends boolean = true> {
   type?: T;
   value?: T;
   active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "legal-pages_select".
+ */
+export interface LegalPagesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  body?: T;
   updatedAt?: T;
   createdAt?: T;
 }

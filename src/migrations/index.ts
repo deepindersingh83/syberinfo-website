@@ -17,6 +17,7 @@ import * as migration_20260813_200136_onboarding_status_subs from './20260813_20
 import * as migration_20260815_093013_site_settings from './20260815_093013_site_settings';
 import * as migration_20260815_095614_homepage_content from './20260815_095614_homepage_content';
 import * as migration_20260815_105304_case_studies from './20260815_105304_case_studies';
+import * as migration_20260815_114149_legal_pages from './20260815_114149_legal_pages';
 
 export const migrations = [
   {
@@ -112,6 +113,11 @@ export const migrations = [
   {
     up: migration_20260815_105304_case_studies.up,
     down: migration_20260815_105304_case_studies.down,
-    name: '20260815_105304_case_studies'
+    name: '20260815_105304_case_studies',
+  },
+  {
+    up: migration_20260815_114149_legal_pages.up,
+    down: migration_20260815_114149_legal_pages.down,
+    name: '20260815_114149_legal_pages'
   },
 ];

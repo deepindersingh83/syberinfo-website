@@ -278,6 +278,16 @@ export async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
   }, fallbackCaseStudies.find((c) => c.slug === slug) ?? null);
 }
 
+/* ------------------------------ Legal pages ------------------------------ */
+export async function getLegalPage(slug: string): Promise<{ title: string; body: unknown } | null> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({ collection: "legal-pages", where: { slug: { equals: slug } }, limit: 1 });
+    const doc = docs[0] as unknown as Record<string, unknown> | undefined;
+    if (!doc || !hasRichText(doc.body)) return null;
+    return { title: String(doc.title ?? ""), body: doc.body };
+  }, null);
+}
+
 export async function getStats(): Promise<Stat[]> {
   return tryPayload(async (payload) => {
     const g = (await payload.findGlobal({

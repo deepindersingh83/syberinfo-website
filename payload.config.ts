@@ -1162,6 +1162,32 @@ export default buildConfig({
       ],
     },
     {
+      slug: "legal-pages",
+      labels: { singular: "Legal Page", plural: "Legal Pages" },
+      admin: {
+        useAsTitle: "title",
+        group: "Content",
+        defaultColumns: ["title", "slug", "updatedAt"],
+        description: "Privacy, Terms, etc. Fill the body to override the built-in page text.",
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      fields: [
+        { name: "title", type: "text", required: true },
+        {
+          name: "slug",
+          type: "text",
+          required: true,
+          unique: true,
+          admin: { description: "Must match the page path: privacy, terms, acceptable-use, or refund-policy" },
+        },
+        {
+          name: "body",
+          type: "richText",
+          admin: { description: "Rich text. When set, it replaces the built-in page content." },
+        },
+      ],
+    },
+    {
       slug: "case-studies",
       labels: { singular: "Case Study", plural: "Case Studies" },
       admin: {
@@ -1706,6 +1732,20 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedCaseStudies.length} case studies`);
+    }
+
+    const { totalDocs: legalCount } = await payload.count({ collection: "legal-pages" });
+    if (legalCount === 0) {
+      const legalSeeds = [
+        { title: "Privacy Policy", slug: "privacy" },
+        { title: "Terms of Service", slug: "terms" },
+        { title: "Acceptable Use Policy", slug: "acceptable-use" },
+        { title: "Refund Policy", slug: "refund-policy" },
+      ];
+      for (const l of legalSeeds) {
+        await payload.create({ collection: "legal-pages", data: { title: l.title, slug: l.slug } });
+      }
+      payload.logger.info("Seeded legal page placeholders (fill body to override built-in text)");
     }
 
     const { totalDocs: productCount } = await payload.count({

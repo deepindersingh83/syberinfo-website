@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import LegalLayout from "@/components/LegalLayout";
+import RichBody from "@/components/RichBody";
+import { getLegalPage } from "@/lib/content";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -7,7 +9,15 @@ export const metadata: Metadata = {
   description: "The terms governing the use of SyberInfo's website and services.",
 };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const cms = await getLegalPage("terms");
+  if (cms) {
+    return (
+      <LegalLayout title={cms.title || "Terms of Service"} updated="">
+        <RichBody data={cms.body} />
+      </LegalLayout>
+    );
+  }
   return (
     <LegalLayout title="Terms of Service" updated="June 2026">
       <p>
