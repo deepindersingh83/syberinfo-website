@@ -324,6 +324,74 @@ export async function getPageHeader(page: string): Promise<PageHeaderContent> {
   }, fb);
 }
 
+/* ------------------------------ Contact page ----------------------------- */
+export type ContactContent = { eyebrow: string; heading: string; subheading: string };
+
+const contactDefaults: ContactContent = {
+  eyebrow: "GET IN TOUCH",
+  heading: "Tell us what’s on your plate.",
+  subheading:
+    "Send a few details and we’ll get back within one business day with next steps — or book a free 30-minute audit straight away.",
+};
+
+export async function getContactContent(): Promise<ContactContent> {
+  return tryPayload(async (payload) => {
+    const g = (await payload.findGlobal({ slug: "page-content" })) as unknown as Record<string, unknown>;
+    const c = (g.contact ?? {}) as Record<string, unknown>;
+    const s = (v: unknown, d: string) => (v == null || String(v).trim() === "" ? d : String(v));
+    return {
+      eyebrow: s(c.eyebrow, contactDefaults.eyebrow),
+      heading: s(c.heading, contactDefaults.heading),
+      subheading: s(c.subheading, contactDefaults.subheading),
+    };
+  }, contactDefaults);
+}
+
+/* ------------------------------ About body ------------------------------- */
+export type AboutBody = {
+  intro: string[];
+  valuesHeading: string;
+  timelineHeading: string;
+  timeline: { year: string; text: string }[];
+};
+
+const aboutBodyDefaults: AboutBody = {
+  intro: [
+    "We built SyberInfo around proactive monitoring, plain-English advice, and engineers who actually pick up the phone. No jargon walls, no finger-pointing — just calm, reliable IT that stays out of your way.",
+    "Today we look after the infrastructure for clinics, agencies, and fast-moving startups across Australia — quietly, and without drama. Our data stays in Australia, and our helpdesk is staffed by real people in Melbourne, Australia.",
+  ],
+  valuesHeading: "What we stand for",
+  timelineHeading: "The story so far",
+  timeline: [
+    { year: "2015", text: "Founded in Melbourne to fix reactive, break-fix IT support." },
+    { year: "2019", text: "Launched our 24/7 monitoring and security operations desk." },
+    { year: "2022", text: "Aligned every client to the ACSC Essential Eight framework." },
+    { year: "2026", text: "120+ endpoints under active management across Australia." },
+  ],
+};
+
+export async function getAboutBody(): Promise<AboutBody> {
+  return tryPayload(async (payload) => {
+    const g = (await payload.findGlobal({ slug: "page-content" })) as unknown as Record<string, unknown>;
+    const a = (g.about ?? {}) as Record<string, unknown>;
+    const s = (v: unknown, d: string) => (v == null || String(v).trim() === "" ? d : String(v));
+    const introRows = Array.isArray(a.intro) ? (a.intro as Record<string, unknown>[]) : [];
+    const intro = introRows
+      .map((r) => String(r.text ?? "").trim())
+      .filter((t) => t.length > 0);
+    const tlRows = Array.isArray(a.timeline) ? (a.timeline as Record<string, unknown>[]) : [];
+    const timeline = tlRows
+      .filter((r) => String(r.year ?? "").trim() !== "" || String(r.text ?? "").trim() !== "")
+      .map((r) => ({ year: String(r.year ?? ""), text: String(r.text ?? "") }));
+    return {
+      intro: intro.length ? intro : aboutBodyDefaults.intro,
+      valuesHeading: s(a.valuesHeading, aboutBodyDefaults.valuesHeading),
+      timelineHeading: s(a.timelineHeading, aboutBodyDefaults.timelineHeading),
+      timeline: timeline.length ? timeline : aboutBodyDefaults.timeline,
+    };
+  }, aboutBodyDefaults);
+}
+
 /* ------------------------------ Legal pages ------------------------------ */
 export async function getLegalPage(slug: string): Promise<{ title: string; body: unknown } | null> {
   return tryPayload(async (payload) => {

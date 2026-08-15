@@ -2351,6 +2351,55 @@ export interface PageContent {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Copy on the /contact page. Phone & email come from Site Settings.
+   */
+  contact?: {
+    /**
+     * Small label above the heading
+     */
+    eyebrow?: string | null;
+    /**
+     * Main heading
+     */
+    heading?: string | null;
+    /**
+     * Lead paragraph under the heading
+     */
+    subheading?: string | null;
+  };
+  /**
+   * Body copy on the /about page (below the header).
+   */
+  about?: {
+    /**
+     * One or more paragraphs of intro copy.
+     */
+    intro?:
+      | {
+          text: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Heading above the values grid
+     */
+    valuesHeading?: string | null;
+    /**
+     * Heading above the timeline
+     */
+    timelineHeading?: string | null;
+    /**
+     * Milestones shown in 'The story so far'.
+     */
+    timeline?:
+      | {
+          year: string;
+          text: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2498,6 +2547,32 @@ export interface PageContentSelect<T extends boolean = true> {
         heading?: T;
         subheading?: T;
         id?: T;
+      };
+  contact?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        subheading?: T;
+      };
+  about?:
+    | T
+    | {
+        intro?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+        valuesHeading?: T;
+        timelineHeading?: T;
+        timeline?:
+          | T
+          | {
+              year?: T;
+              text?: T;
+              id?: T;
+            };
       };
   updatedAt?: T;
   createdAt?: T;
