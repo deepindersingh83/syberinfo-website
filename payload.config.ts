@@ -1471,6 +1471,33 @@ export default buildConfig({
             { name: "text", type: "textarea", required: true },
           ],
         },
+        {
+          name: "hero",
+          type: "group",
+          label: "Hero",
+          admin: { description: "The top section of the homepage. Blank fields use the built-in defaults." },
+          fields: [
+            { name: "eyebrow", type: "text", admin: { description: "Small pill above the heading, e.g. 'Now onboarding new clients · 2026'" } },
+            { name: "heading", type: "text", admin: { description: "Main H1. Plain text — overrides the styled default when set." } },
+            { name: "subheading", type: "textarea" },
+            { name: "ctaPrimaryLabel", type: "text" },
+            { name: "ctaPrimaryHref", type: "text" },
+            { name: "ctaSecondaryLabel", type: "text" },
+            { name: "ctaSecondaryHref", type: "text" },
+          ],
+        },
+        {
+          name: "closingCta",
+          type: "group",
+          label: "Closing call-to-action",
+          admin: { description: "The big indigo call-to-action band near the bottom of the homepage." },
+          fields: [
+            { name: "heading", type: "text" },
+            { name: "subheading", type: "textarea" },
+            { name: "buttonLabel", type: "text" },
+            { name: "buttonHref", type: "text" },
+          ],
+        },
       ],
     },
     {

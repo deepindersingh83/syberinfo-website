@@ -15,6 +15,7 @@ import * as migration_20260813_183200_sales_crm from './20260813_183200_sales_cr
 import * as migration_20260813_190228_rich_body from './20260813_190228_rich_body';
 import * as migration_20260813_200136_onboarding_status_subs from './20260813_200136_onboarding_status_subs';
 import * as migration_20260815_093013_site_settings from './20260815_093013_site_settings';
+import * as migration_20260815_095614_homepage_content from './20260815_095614_homepage_content';
 
 export const migrations = [
   {
@@ -100,6 +101,11 @@ export const migrations = [
   {
     up: migration_20260815_093013_site_settings.up,
     down: migration_20260815_093013_site_settings.down,
-    name: '20260815_093013_site_settings'
+    name: '20260815_093013_site_settings',
+  },
+  {
+    up: migration_20260815_095614_homepage_content.up,
+    down: migration_20260815_095614_homepage_content.down,
+    name: '20260815_095614_homepage_content'
   },
 ];

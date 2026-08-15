@@ -2092,6 +2092,33 @@ export interface SiteContent {
         id?: string | null;
       }[]
     | null;
+  /**
+   * The top section of the homepage. Blank fields use the built-in defaults.
+   */
+  hero?: {
+    /**
+     * Small pill above the heading, e.g. 'Now onboarding new clients · 2026'
+     */
+    eyebrow?: string | null;
+    /**
+     * Main H1. Plain text — overrides the styled default when set.
+     */
+    heading?: string | null;
+    subheading?: string | null;
+    ctaPrimaryLabel?: string | null;
+    ctaPrimaryHref?: string | null;
+    ctaSecondaryLabel?: string | null;
+    ctaSecondaryHref?: string | null;
+  };
+  /**
+   * The big indigo call-to-action band near the bottom of the homepage.
+   */
+  closingCta?: {
+    heading?: string | null;
+    subheading?: string | null;
+    buttonLabel?: string | null;
+    buttonHref?: string | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2202,6 +2229,25 @@ export interface SiteContentSelect<T extends boolean = true> {
         title?: T;
         text?: T;
         id?: T;
+      };
+  hero?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        subheading?: T;
+        ctaPrimaryLabel?: T;
+        ctaPrimaryHref?: T;
+        ctaSecondaryLabel?: T;
+        ctaSecondaryHref?: T;
+      };
+  closingCta?:
+    | T
+    | {
+        heading?: T;
+        subheading?: T;
+        buttonLabel?: T;
+        buttonHref?: T;
       };
   updatedAt?: T;
   createdAt?: T;

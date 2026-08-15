@@ -178,6 +178,65 @@ export async function getProduct(slug: string): Promise<Product | null> {
   }, fallbackProducts.find((p) => p.slug === slug) ?? null);
 }
 
+export type HomeContent = {
+  hero: {
+    eyebrow: string;
+    heading: string; // empty = use the styled default in the page
+    subheading: string;
+    ctaPrimaryLabel: string;
+    ctaPrimaryHref: string;
+    ctaSecondaryLabel: string;
+    ctaSecondaryHref: string;
+  };
+  closingCta: { heading: string; subheading: string; buttonLabel: string; buttonHref: string };
+};
+
+const homeDefaults: HomeContent = {
+  hero: {
+    eyebrow: "Now onboarding new clients · 2026",
+    heading: "",
+    subheading:
+      "Managed IT, cloud, and cybersecurity for growing Australian businesses. We handle the infrastructure, the threats, and the 2am alerts — so your team never has to think about any of it.",
+    ctaPrimaryLabel: "Get a free IT audit →",
+    ctaPrimaryHref: "/book",
+    ctaSecondaryLabel: "Explore services",
+    ctaSecondaryHref: "/services",
+  },
+  closingCta: {
+    heading: "Let’s get your IT off your plate.",
+    subheading:
+      "Book a free 30-minute audit. We’ll map your current setup, flag the risks, and show you exactly what we’d do — no obligation.",
+    buttonLabel: "Book a free audit",
+    buttonHref: "/book",
+  },
+};
+
+export async function getHomeContent(): Promise<HomeContent> {
+  return tryPayload(async (payload) => {
+    const g = (await payload.findGlobal({ slug: "site-content" })) as unknown as Record<string, unknown>;
+    const h = (g.hero as Record<string, unknown>) || {};
+    const c = (g.closingCta as Record<string, unknown>) || {};
+    const s = (v: unknown, fb: string) => (v == null || String(v).trim() === "" ? fb : String(v));
+    return {
+      hero: {
+        eyebrow: s(h.eyebrow, homeDefaults.hero.eyebrow),
+        heading: s(h.heading, homeDefaults.hero.heading),
+        subheading: s(h.subheading, homeDefaults.hero.subheading),
+        ctaPrimaryLabel: s(h.ctaPrimaryLabel, homeDefaults.hero.ctaPrimaryLabel),
+        ctaPrimaryHref: s(h.ctaPrimaryHref, homeDefaults.hero.ctaPrimaryHref),
+        ctaSecondaryLabel: s(h.ctaSecondaryLabel, homeDefaults.hero.ctaSecondaryLabel),
+        ctaSecondaryHref: s(h.ctaSecondaryHref, homeDefaults.hero.ctaSecondaryHref),
+      },
+      closingCta: {
+        heading: s(c.heading, homeDefaults.closingCta.heading),
+        subheading: s(c.subheading, homeDefaults.closingCta.subheading),
+        buttonLabel: s(c.buttonLabel, homeDefaults.closingCta.buttonLabel),
+        buttonHref: s(c.buttonHref, homeDefaults.closingCta.buttonHref),
+      },
+    };
+  }, homeDefaults);
+}
+
 export async function getStats(): Promise<Stat[]> {
   return tryPayload(async (payload) => {
     const g = (await payload.findGlobal({
