@@ -470,7 +470,20 @@ function mapPost(d: unknown): Post {
     richBody: hasRichText(doc.richBody) ? doc.richBody : undefined,
     status: (doc.status as Post["status"]) ?? "published",
     coverImage: mediaUrl(doc.coverImage),
+    authorProfile: mapAuthor(doc.authorProfile),
   } satisfies Post;
+}
+
+function mapAuthor(v: unknown): Post["authorProfile"] {
+  if (!v || typeof v !== "object") return undefined;
+  const a = v as Record<string, unknown>;
+  if (!a.name) return undefined;
+  return {
+    name: String(a.name),
+    role: a.role ? String(a.role) : undefined,
+    bio: a.bio ? String(a.bio) : undefined,
+    avatar: mediaUrl(a.avatar),
+  };
 }
 
 /** True when a Lexical value actually has content (not an empty root). */
@@ -511,6 +524,7 @@ export async function getPost(slug: string): Promise<Post | null> {
       collection: "posts",
       where: { slug: { equals: slug } },
       limit: 1,
+      depth: 2, // resolve authorProfile → avatar
     });
     if (docs.length) return mapPost(docs[0]);
     return fallbackPosts.find((p) => p.slug === slug) ?? null;

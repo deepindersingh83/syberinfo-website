@@ -74,6 +74,7 @@ export interface Config {
     software: Software;
     testimonials: Testimonial;
     posts: Post;
+    authors: Author;
     leads: Lead;
     plans: Plan;
     partners: Partner;
@@ -113,6 +114,7 @@ export interface Config {
     software: SoftwareSelect<false> | SoftwareSelect<true>;
     testimonials: TestimonialsSelect<false> | TestimonialsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
+    authors: AuthorsSelect<false> | AuthorsSelect<true>;
     leads: LeadsSelect<false> | LeadsSelect<true>;
     plans: PlansSelect<false> | PlansSelect<true>;
     partners: PartnersSelect<false> | PartnersSelect<true>;
@@ -579,6 +581,10 @@ export interface Post {
     [k: string]: unknown;
   } | null;
   /**
+   * Link a full author profile (bio + photo). Overrides the plain Author text on the article.
+   */
+  authorProfile?: (number | null) | Author;
+  /**
    * Optional search / social overrides. Leave blank to use the page defaults.
    */
   seo?: {
@@ -603,6 +609,27 @@ export interface Post {
      */
     noindex?: boolean | null;
   };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Bylines for blog articles — name, role, short bio and photo.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authors".
+ */
+export interface Author {
+  id: number;
+  name: string;
+  /**
+   * e.g. Lead Engineer, Founder
+   */
+  role?: string | null;
+  /**
+   * A sentence or two shown under the article.
+   */
+  bio?: string | null;
+  avatar?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -1419,6 +1446,10 @@ export interface PayloadLockedDocument {
         value: number | Post;
       } | null)
     | ({
+        relationTo: 'authors';
+        value: number | Author;
+      } | null)
+    | ({
         relationTo: 'leads';
         value: number | Lead;
       } | null)
@@ -1763,6 +1794,7 @@ export interface PostsSelect<T extends boolean = true> {
   readMins?: T;
   body?: T;
   richBody?: T;
+  authorProfile?: T;
   seo?:
     | T
     | {
@@ -1772,6 +1804,18 @@ export interface PostsSelect<T extends boolean = true> {
         canonical?: T;
         noindex?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authors_select".
+ */
+export interface AuthorsSelect<T extends boolean = true> {
+  name?: T;
+  role?: T;
+  bio?: T;
+  avatar?: T;
   updatedAt?: T;
   createdAt?: T;
 }

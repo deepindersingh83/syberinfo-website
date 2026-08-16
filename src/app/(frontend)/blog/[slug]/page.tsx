@@ -47,8 +47,14 @@ export default async function PostPage({ params }: Params) {
   const [post, all] = await Promise.all([getPost(slug), getPosts()]);
   if (!post) notFound();
 
-  const related = all.filter((p) => p.slug !== post.slug).slice(0, 3);
+  // Prefer articles in the same category, then fill with the most recent.
+  const others = all.filter((p) => p.slug !== post.slug);
+  const related = [
+    ...others.filter((p) => p.category && p.category === post.category),
+    ...others.filter((p) => !p.category || p.category !== post.category),
+  ].slice(0, 3);
   const paragraphs = post.body.split(/\n\s*\n/).filter(Boolean);
+  const byline = post.authorProfile;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -56,7 +62,9 @@ export default async function PostPage({ params }: Params) {
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
-    author: { "@type": "Organization", name: post.author },
+    author: byline
+      ? { "@type": "Person", name: byline.name, ...(byline.role ? { jobTitle: byline.role } : {}) }
+      : { "@type": "Organization", name: post.author },
     publisher: { "@type": "Organization", name: site.name },
     mainEntityOfPage: `${site.url}/blog/${post.slug}`,
   };
@@ -91,6 +99,7 @@ export default async function PostPage({ params }: Params) {
           )}
           <span>{formatDate(post.date)}</span>
           <span>· {post.readMins} min read</span>
+          <span>· by {byline?.name || post.author}</span>
         </div>
 
         <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
@@ -120,6 +129,29 @@ export default async function PostPage({ params }: Params) {
             {paragraphs.map((para, i) => (
               <p key={i}>{para}</p>
             ))}
+          </div>
+        )}
+
+        {byline && (byline.bio || byline.role) && (
+          <div className="mt-12 flex items-start gap-4 rounded-3xl border border-white/10 bg-ink-800/40 p-6">
+            {byline.avatar ? (
+              <Image
+                src={byline.avatar}
+                alt={byline.name}
+                width={56}
+                height={56}
+                className="h-14 w-14 flex-none rounded-full object-cover"
+              />
+            ) : (
+              <div className="grid h-14 w-14 flex-none place-items-center rounded-full bg-indigo/20 text-lg font-bold text-indigo">
+                {byline.name.slice(0, 1)}
+              </div>
+            )}
+            <div>
+              <div className="font-bold">{byline.name}</div>
+              {byline.role && <div className="text-sm text-muted">{byline.role}</div>}
+              {byline.bio && <p className="mt-2 text-sm leading-relaxed text-muted">{byline.bio}</p>}
+            </div>
           </div>
         )}
 
