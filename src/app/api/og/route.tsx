@@ -69,6 +69,12 @@ export function GET(req: Request) {
         </div>
       </div>
     ),
-    { width: 1200, height: 630 },
+    {
+      width: 1200,
+      height: 630,
+      // The card is deterministic by title/kicker, so let scrapers and CDNs
+      // cache it hard instead of re-rendering on every unfurl.
+      headers: { "Cache-Control": "public, max-age=31536000, immutable" },
+    },
   );
 }

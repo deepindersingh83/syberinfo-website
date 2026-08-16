@@ -40,6 +40,12 @@ const nextConfig: NextConfig = {
   // Produces a self-contained server build (.next/standalone) that's ideal for
   // running behind CloudPanel's nginx reverse proxy with PM2. See DEPLOY.md.
   output: "standalone",
+  // Core Web Vitals: serve CMS/media images as modern formats (AVIF → WebP)
+  // and cache the optimized variants for 30 days to cut LCP and bandwidth.
+  images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
