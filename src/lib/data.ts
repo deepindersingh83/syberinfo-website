@@ -1103,6 +1103,68 @@ From there you can view active services, download tax invoices, update payment d
 
 Forgot your password? Use the "Forgot password" link on the login page, or contact us and we'll help you back in.`,
   },
+  {
+    slug: "set-up-multi-factor-authentication",
+    title: "How to set up multi-factor authentication",
+    category: "Security",
+    excerpt: "Add a second layer of protection to your Microsoft 365 or Google account in under five minutes.",
+    order: 5,
+    body: `Multi-factor authentication (MFA) requires a second proof of identity — usually a code from your phone — on top of your password.
+
+Open your account security settings, choose "Add sign-in method", and select an authenticator app. Scan the QR code with Microsoft Authenticator or Google Authenticator.
+
+Confirm the 6-digit code, save your backup codes somewhere safe, and you're done. Contact the helpdesk if you lose access to your device.`,
+  },
+  {
+    slug: "recover-a-deleted-email-or-file",
+    title: "Recovering a deleted email or file",
+    category: "Email",
+    excerpt: "Restore items from the recycle bin or request a point-in-time recovery from backup.",
+    order: 6,
+    body: `Most deletions can be undone from the Deleted Items folder (email) or the Recycle Bin (OneDrive/SharePoint) within 30 days.
+
+For older items, raise a ticket and we can restore from your daily backup — typically within an hour.`,
+  },
+  {
+    slug: "onboarding-a-new-staff-member",
+    title: "Onboarding a new staff member",
+    category: "Devices",
+    excerpt: "The checklist we follow to get a new starter fully equipped on day one.",
+    order: 7,
+    body: `Submit a ticket at least five business days before the start date with the role, required software, and start date.
+
+We provision the laptop, create accounts, assign licenses, and configure security policies before dispatch.`,
+  },
+  {
+    slug: "connect-to-the-company-vpn",
+    title: "Connecting to the company VPN",
+    category: "Networking",
+    excerpt: "Step-by-step guide to secure remote access from any device.",
+    order: 8,
+    body: `Install the VPN client we provided, enter your work email, and approve the MFA prompt.
+
+Once connected you'll have secure access to internal file shares and applications.`,
+  },
+  {
+    slug: "spotting-a-phishing-email",
+    title: "Spotting a phishing email",
+    category: "Security",
+    excerpt: "The red flags every staff member should know.",
+    order: 9,
+    body: `Check the sender address carefully, hover over links before clicking, and be wary of urgent requests for money or credentials.
+
+When in doubt, forward the email to security@syberinfo.com.au and we'll verify it.`,
+  },
+  {
+    slug: "understanding-your-monthly-invoice",
+    title: "Understanding your monthly invoice",
+    category: "Billing",
+    excerpt: "What each line item means and how seat-based billing works.",
+    order: 10,
+    body: `Your invoice covers your managed plan plus any add-on services and per-seat software licenses active that month.
+
+Changes mid-month are prorated and appear on the following invoice.`,
+  },
 ];
 
 export type Project = {

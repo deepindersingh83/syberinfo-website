@@ -1967,24 +1967,32 @@ export default buildConfig({
       payload.logger.info(`Seeded ${seedPosts.length} posts`);
     }
 
-    const { totalDocs: helpCount } = await payload.count({
-      collection: "help-articles",
-    });
-    if (helpCount === 0) {
+    // Top-up seed: create any bundled help article whose slug isn't already in
+    // the CMS. Runs every boot but only inserts missing ones, so existing
+    // installs pick up newly-added articles without touching edited ones.
+    {
+      let added = 0;
       for (const h of seedHelp) {
-        await payload.create({
+        const { totalDocs } = await payload.count({
           collection: "help-articles",
-          data: {
-            title: h.title,
-            slug: h.slug,
-            category: h.category,
-            excerpt: h.excerpt,
-            body: h.body,
-            order: h.order,
-          },
+          where: { slug: { equals: h.slug } },
         });
+        if (totalDocs === 0) {
+          await payload.create({
+            collection: "help-articles",
+            data: {
+              title: h.title,
+              slug: h.slug,
+              category: h.category,
+              excerpt: h.excerpt,
+              body: h.body,
+              order: h.order,
+            },
+          });
+          added += 1;
+        }
       }
-      payload.logger.info(`Seeded ${seedHelp.length} help articles`);
+      if (added) payload.logger.info(`Seeded ${added} new help articles`);
     }
 
     const { totalDocs: projectCount } = await payload.count({

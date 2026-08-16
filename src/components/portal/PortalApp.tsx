@@ -796,25 +796,57 @@ function Plans({ onRequest }: { onRequest: (name: string) => void }) {
   );
 }
 
+type KbItem = { slug: string; title: string; category: string; excerpt: string; paragraphs: string[] };
+
+// Bundled fallback used only if the CMS fetch fails.
+const kbFallback: KbItem[] = kbArticles.map((a) => ({
+  slug: a.id,
+  title: a.title,
+  category: a.cat,
+  excerpt: a.excerpt,
+  paragraphs: a.body,
+}));
+
 function Knowledge({ sel, setSel }: { sel: string | null; setSel: (s: string | null) => void }) {
-  const article = sel ? kbArticles.find((a) => a.id === sel) : null;
+  const [items, setItems] = useState<KbItem[]>(kbFallback);
+
+  useEffect(() => {
+    let live = true;
+    fetch("/api/help")
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => {
+        if (live && Array.isArray(d.articles) && d.articles.length) setItems(d.articles as KbItem[]);
+      })
+      .catch(() => {
+        /* keep bundled fallback */
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const article = sel ? items.find((a) => a.slug === sel) : null;
   if (article) {
     return (
       <div className="mx-auto max-w-[760px]">
         <button onClick={() => setSel(null)} className="mb-5 text-sm text-muted hover:text-foreground">← Knowledge base</button>
-        <div className="mb-2 font-mono text-[12px] tracking-[.05em] text-indigo">{article.cat.toUpperCase()} · {article.read}</div>
+        <div className="mb-2 font-mono text-[12px] tracking-[.05em] text-indigo">{article.category.toUpperCase()}</div>
         <h1 className="font-display text-[clamp(24px,3.5vw,36px)] font-bold tracking-[-.02em]">{article.title}</h1>
-        <div className="mt-6 flex flex-col gap-4">{article.body.map((p, i) => <p key={i} className="text-[16px] leading-[1.7] text-[#c4cad4]">{p}</p>)}</div>
+        <div className="mt-6 flex flex-col gap-4">{article.paragraphs.map((p, i) => <p key={i} className="text-[16px] leading-[1.7] text-[#c4cad4]">{p}</p>)}</div>
       </div>
     );
   }
   return (
     <div className="mx-auto max-w-[1000px]">
-      <h2 className="mb-5 font-display text-[22px] font-bold tracking-[-.02em]">Knowledge base</h2>
+      <h2 className="mb-1 font-display text-[22px] font-bold tracking-[-.02em]">Knowledge base</h2>
+      <p className="mb-5 text-[13.5px] text-muted-2">
+        Answers to common questions. Also public at{" "}
+        <Link href="/help" target="_blank" className="text-indigo hover:underline">syberinfo.com.au/help</Link>.
+      </p>
       <div className="grid gap-4 md:grid-cols-2">
-        {kbArticles.map((a) => (
-          <button key={a.id} onClick={() => setSel(a.id)} className={`${card} p-5 text-left transition-colors hover:border-indigo/40`}>
-            <div className="mb-2 font-mono text-[11.5px] tracking-[.05em] text-indigo">{a.cat.toUpperCase()} · {a.read}</div>
+        {items.map((a) => (
+          <button key={a.slug} onClick={() => setSel(a.slug)} className={`${card} p-5 text-left transition-colors hover:border-indigo/40`}>
+            <div className="mb-2 font-mono text-[11.5px] tracking-[.05em] text-indigo">{a.category.toUpperCase()}</div>
             <h3 className="font-display text-[16px] font-semibold tracking-[-.01em]">{a.title}</h3>
             <p className="mt-1.5 text-[13.5px] leading-[1.5] text-muted-2">{a.excerpt}</p>
           </button>
