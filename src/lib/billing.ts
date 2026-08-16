@@ -101,17 +101,47 @@ export async function runBillingCycle(payload: Payload, now = new Date()): Promi
       const customerId = idOf(s.customer);
       if (!customerId) continue;
       const dueDate = s.nextDueDate ? new Date(s.nextDueDate) : new Date(now);
-      await payload.create({
+
+      // Roll any unbilled metered usage for this subscription into the invoice.
+      const usage = await payload.find({
+        collection: "usage-records",
+        where: { and: [{ subscription: { equals: Number(s.id) } }, { billed: { not_equals: true } }] },
+        limit: 500,
+        depth: 0,
+        overrideAccess: true,
+      });
+      const usageDocs = usage.docs as unknown as { id: string | number; description?: string; quantity?: number; amount?: number }[];
+      const items = [
+        { description: s.label || "Subscription renewal", quantity: 1, amount: Number(s.recurringAmount) || 0 },
+        ...usageDocs.map((u) => ({
+          description: u.description || "Metered usage",
+          quantity: Number(u.quantity) || 1,
+          amount: Number(u.amount) || 0,
+        })),
+      ];
+
+      const invoice = await payload.create({
         collection: "invoices",
         overrideAccess: true,
         data: {
           customer: Number(customerId),
           subscription: Number(s.id),
-          items: [{ description: s.label || "Subscription renewal", quantity: 1, amount: Number(s.recurringAmount) || 0 }],
+          items,
           status: "unpaid",
           dueDate: dueDate.toISOString(),
         },
       });
+
+      // Mark the usage as billed against this invoice so it's never double-billed.
+      for (const u of usageDocs) {
+        await payload.update({
+          collection: "usage-records",
+          id: u.id,
+          overrideAccess: true,
+          data: { billed: true, billedInvoice: Number((invoice as { id: string | number }).id) },
+        });
+      }
+
       await payload.update({
         collection: "subscriptions",
         id: s.id,
