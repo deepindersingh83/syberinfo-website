@@ -68,7 +68,7 @@ export async function runLinkCheck(base: string): Promise<LinkReport> {
         // The sitemap uses the canonical production host; we only want the path
         // so seeds work no matter which origin we're crawling (staging/local).
         try {
-          let p = new URL(m[1].trim()).pathname.replace(/\/+$/, "") || "/";
+          const p = new URL(m[1].trim()).pathname.replace(/\/+$/, "") || "/";
           if (p.startsWith("/api/") || p.startsWith("/admin")) continue;
           seeds.add(p);
         } catch {
