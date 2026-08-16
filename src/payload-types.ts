@@ -89,6 +89,7 @@ export interface Config {
     invoices: Invoice;
     transactions: Transaction;
     'client-domains': ClientDomain;
+    assets: Asset;
     tickets: Ticket;
     coupons: Coupon;
     'legal-pages': LegalPage;
@@ -127,6 +128,7 @@ export interface Config {
     invoices: InvoicesSelect<false> | InvoicesSelect<true>;
     transactions: TransactionsSelect<false> | TransactionsSelect<true>;
     'client-domains': ClientDomainsSelect<false> | ClientDomainsSelect<true>;
+    assets: AssetsSelect<false> | AssetsSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
     coupons: CouponsSelect<false> | CouponsSelect<true>;
     'legal-pages': LegalPagesSelect<false> | LegalPagesSelect<true>;
@@ -973,6 +975,60 @@ export interface ClientDomain {
   createdAt: string;
 }
 /**
+ * Hardware, software and licenses per client — with renewal dates for reminders and upsell.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "assets".
+ */
+export interface Asset {
+  id: number;
+  /**
+   * e.g. Dell Latitude 5450, Microsoft 365 Business Premium
+   */
+  name: string;
+  /**
+   * The client this asset belongs to
+   */
+  customer?: (number | null) | Customer;
+  category?: ('hardware' | 'software' | 'license' | 'subscription' | 'other') | null;
+  /**
+   * e.g. Dell, Microsoft, Adobe
+   */
+  vendor?: string | null;
+  /**
+   * Serial / asset tag / license key
+   */
+  identifier?: string | null;
+  /**
+   * Seats / units
+   */
+  quantity?: number | null;
+  /**
+   * ex-GST AUD per unit — used for renewal value / upsell
+   */
+  unitCost?: number | null;
+  purchaseDate?: string | null;
+  /**
+   * Warranty end / license or subscription renewal date
+   */
+  renewalDate?: string | null;
+  /**
+   * Auto-set from the renewal date unless 'retired'.
+   */
+  status?: ('active' | 'expiring' | 'expired' | 'retired') | null;
+  /**
+   * Email the client before this renews
+   */
+  autoRemind?: boolean | null;
+  /**
+   * Set when a renewal reminder was last sent
+   */
+  lastReminderAt?: string | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "tickets".
  */
@@ -1421,6 +1477,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'client-domains';
         value: number | ClientDomain;
+      } | null)
+    | ({
+        relationTo: 'assets';
+        value: number | Asset;
       } | null)
     | ({
         relationTo: 'tickets';
@@ -2028,6 +2088,27 @@ export interface ClientDomainsSelect<T extends boolean = true> {
   expiryDate?: T;
   autoRenew?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "assets_select".
+ */
+export interface AssetsSelect<T extends boolean = true> {
+  name?: T;
+  customer?: T;
+  category?: T;
+  vendor?: T;
+  identifier?: T;
+  quantity?: T;
+  unitCost?: T;
+  purchaseDate?: T;
+  renewalDate?: T;
+  status?: T;
+  autoRemind?: T;
+  lastReminderAt?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

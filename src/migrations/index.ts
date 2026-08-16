@@ -21,6 +21,7 @@ import * as migration_20260815_114149_legal_pages from './20260815_114149_legal_
 import * as migration_20260815_115028_page_content from './20260815_115028_page_content';
 import * as migration_20260815_163058_phase13_page_body from './20260815_163058_phase13_page_body';
 import * as migration_20260816_024155_phase15_quote_paid from './20260816_024155_phase15_quote_paid';
+import * as migration_20260816_035725_phase16_assets from './20260816_035725_phase16_assets';
 
 export const migrations = [
   {
@@ -136,6 +137,11 @@ export const migrations = [
   {
     up: migration_20260816_024155_phase15_quote_paid.up,
     down: migration_20260816_024155_phase15_quote_paid.down,
-    name: '20260816_024155_phase15_quote_paid'
+    name: '20260816_024155_phase15_quote_paid',
+  },
+  {
+    up: migration_20260816_035725_phase16_assets.up,
+    down: migration_20260816_035725_phase16_assets.down,
+    name: '20260816_035725_phase16_assets'
   },
 ];

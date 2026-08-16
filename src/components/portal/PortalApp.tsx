@@ -16,6 +16,7 @@ type Invoice = { id: string; number: string; total: number; status: string; dueD
 type TicketMsg = { author: string; message: string };
 type Ticket = { id: string; subject: string; department: string; status: string; priority: string; updatedAt: string; messages: TicketMsg[] };
 type Domain = { id: string; domain: string; status: string; expiryDate: string; autoRenew: boolean };
+type Asset = { id: string; name: string; category: string; vendor: string; quantity: number; renewalDate: string; status: string };
 type SwPlan = { name: string; price: number; unit: string; feat: string };
 type SwProduct = { id: string; name: string; brand: string; category: string; letter: string; color: string; tagline: string; plans: SwPlan[]; addons: { name: string; price: number; desc: string }[] };
 type Me = {
@@ -24,6 +25,7 @@ type Me = {
   invoices: Invoice[];
   tickets: Ticket[];
   domains: Domain[];
+  assets: Asset[];
 };
 
 type View = "loading" | "login" | "register" | "forgot" | "dash";
@@ -65,6 +67,7 @@ const NAV = [
   { key: "overview", label: "Overview", icon: "▦" },
   { key: "services", label: "My subscriptions", icon: "☰" },
   { key: "invoices", label: "Invoices", icon: "$" },
+  { key: "assets", label: "Assets & licences", icon: "▣" },
   { key: "tickets", label: "Support", icon: "✉" },
   { key: "plans", label: "Browse plans", icon: "◆" },
   { key: "software", label: "Software & licences", icon: "▧" },
@@ -376,6 +379,14 @@ export default function PortalApp() {
           {tab === "overview" && <Overview me={me} setTab={setTab} />}
           {tab === "services" && <Services subs={me.subscriptions} domains={me.domains} onUpgrade={() => setTab("plans")} />}
           {tab === "invoices" && <Invoices invoices={me.invoices} onPay={payInvoice} busy={busy} />}
+          {tab === "assets" && (
+            <Assets
+              assets={me.assets}
+              onEnquire={(name) =>
+                submitTicket(`Renewal enquiry: ${name}`, "sales", `I'd like to discuss renewing or upgrading "${name}".`)
+              }
+            />
+          )}
           {tab === "tickets" && <Tickets tickets={me.tickets} sel={tkSel} setSel={setTkSel} onCreate={submitTicket} onReply={replyTicket} custName={customer.name || customer.email} />}
           {tab === "plans" && <Plans onRequest={(name) => submitTicket(`Plan change request: ${name}`, "sales", `I'd like to move to the ${name} plan.`)} />}
           {tab === "software" && (
@@ -544,6 +555,47 @@ function Invoices({ invoices, onPay, busy }: { invoices: Invoice[]; onPay: (id: 
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Assets({ assets, onEnquire }: { assets: Asset[]; onEnquire: (name: string) => void }) {
+  const soon = (a: Asset) => a.status === "expiring" || a.status === "expired";
+  return (
+    <div className="mx-auto max-w-[1000px]">
+      <h2 className="mb-1 font-display text-[22px] font-bold tracking-[-.02em]">Assets &amp; licences</h2>
+      <p className="mb-5 text-[13.5px] text-muted-2">
+        Everything we manage for you, with renewal dates so nothing lapses. Need to add seats or renew early? Just ask.
+      </p>
+      {assets.length === 0 ? (
+        <Empty>No assets on file yet. We&rsquo;ll add your hardware and licences as we onboard them.</Empty>
+      ) : (
+        <div className={`${card} divide-y divide-white/[.06]`}>
+          {assets.map((a) => (
+            <div key={a.id} className="flex flex-wrap items-center gap-4 px-6 py-4">
+              <div className="min-w-[200px] flex-1">
+                <div className="text-[14px] font-semibold">{a.name}</div>
+                <div className="text-[12px] text-muted-3">
+                  {[a.vendor, a.category, a.quantity > 1 ? `${a.quantity} seats` : null].filter(Boolean).join(" · ")}
+                </div>
+              </div>
+              {a.renewalDate ? (
+                <div className={`text-right text-[12.5px] ${soon(a) ? "text-[#e8c877]" : "text-muted-3"}`}>
+                  <div className="uppercase tracking-[.04em] text-[10.5px] text-muted-3">Renews</div>
+                  {dateAU(a.renewalDate)}
+                </div>
+              ) : null}
+              <Pill label={a.status} />
+              <button
+                onClick={() => onEnquire(a.name)}
+                className="rounded-[9px] border border-white/[.12] px-3 py-2 text-[12.5px] font-semibold text-muted-2 hover:text-foreground"
+              >
+                Renew / upgrade
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
