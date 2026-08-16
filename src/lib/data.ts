@@ -684,6 +684,7 @@ export type Post = {
   richBody?: unknown; // Lexical rich-text JSON from the CMS, when present
   status?: "draft" | "published";
   coverImage?: string; // image URL (from CMS upload)
+  authorProfile?: { name: string; role?: string; bio?: string; avatar?: string };
 };
 
 export const posts: Post[] = [

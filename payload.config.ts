@@ -517,7 +517,30 @@ export default buildConfig({
             description: "Rich formatted article (headings, lists, links, inline images). When set, it replaces the plain body on the site.",
           },
         },
+        {
+          name: "authorProfile",
+          type: "relationship",
+          relationTo: "authors",
+          admin: { description: "Link a full author profile (bio + photo). Overrides the plain Author text on the article." },
+        },
         seoGroup,
+      ],
+    },
+    {
+      slug: "authors",
+      labels: { singular: "Author", plural: "Authors" },
+      admin: {
+        useAsTitle: "name",
+        group: "Content",
+        defaultColumns: ["name", "role"],
+        description: "Bylines for blog articles — name, role, short bio and photo.",
+      },
+      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      fields: [
+        { name: "name", type: "text", required: true },
+        { name: "role", type: "text", admin: { description: "e.g. Lead Engineer, Founder" } },
+        { name: "bio", type: "textarea", admin: { description: "A sentence or two shown under the article." } },
+        { name: "avatar", type: "upload", relationTo: "media" },
       ],
     },
     {
@@ -1965,6 +1988,20 @@ export default buildConfig({
         });
       }
       payload.logger.info(`Seeded ${seedPosts.length} posts`);
+    }
+
+    // Seed a default author byline so editors have one to attach to articles.
+    const { totalDocs: authorCount } = await payload.count({ collection: "authors" });
+    if (authorCount === 0) {
+      await payload.create({
+        collection: "authors",
+        data: {
+          name: "SyberInfo Team",
+          role: "Managed IT & Cybersecurity",
+          bio: "The SyberInfo engineering team keeps Australian businesses secure, online and running — sharing what we learn along the way.",
+        },
+      });
+      payload.logger.info("Seeded default author");
     }
 
     // Top-up seed: create any bundled help article whose slug isn't already in
