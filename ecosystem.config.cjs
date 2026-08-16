@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * PM2 process config for running the SyberInfo site on a CloudPanel VPS.
  *
