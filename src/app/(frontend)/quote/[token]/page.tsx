@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getPayload } from "payload";
 import config from "@payload-config";
 import QuoteAccept from "@/components/QuoteAccept";
+import { stripeEnabled } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,10 @@ export default async function QuotePage({ params }: Params) {
     ? (quote.items as { description?: string; quantity?: number; unitPrice?: number }[])
     : [];
   const accepted = quote.status === "accepted";
-  const expired = !accepted && quote.validUntil ? new Date(quote.validUntil as string) < new Date() : false;
+  const paid = Boolean(quote.paidAt);
+  const expired = !accepted && !paid && quote.validUntil ? new Date(quote.validUntil as string) < new Date() : false;
+  const total = Number(quote.total) || 0;
+  const canPay = stripeEnabled() && !paid && !expired && total > 0;
 
   return (
     <div className="relative z-[1] mx-auto max-w-[820px] px-5 pb-24 pt-32 sm:px-8">
@@ -90,7 +94,7 @@ export default async function QuotePage({ params }: Params) {
             This proposal has expired. Please contact us for an updated quote.
           </div>
         ) : (
-          <QuoteAccept token={token} accepted={accepted} />
+          <QuoteAccept token={token} accepted={accepted} paid={paid} canPay={canPay} />
         )}
       </div>
     </div>

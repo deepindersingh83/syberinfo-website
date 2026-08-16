@@ -57,6 +57,38 @@ export async function createInvoiceCheckout(opts: {
 }
 
 /**
+ * Create a one-off Checkout Session to pay an accepted quote/proposal.
+ * `amountCents` is AUD in the smallest unit. Returns the hosted checkout URL.
+ * The quote token travels in metadata so the webhook can reconcile payment.
+ */
+export async function createQuoteCheckout(opts: {
+  quoteNumber: string;
+  quoteToken: string;
+  title?: string;
+  amountCents: number;
+  customerEmail?: string;
+  successUrl: string;
+  cancelUrl: string;
+}): Promise<{ id: string; url: string }> {
+  const body = form({
+    mode: "payment",
+    "line_items[0][price_data][currency]": "aud",
+    "line_items[0][price_data][product_data][name]": opts.title
+      ? `${opts.title} (${opts.quoteNumber})`
+      : `Proposal ${opts.quoteNumber}`,
+    "line_items[0][price_data][unit_amount]": opts.amountCents,
+    "line_items[0][quantity]": 1,
+    success_url: opts.successUrl,
+    cancel_url: opts.cancelUrl,
+    customer_email: opts.customerEmail,
+    "metadata[quoteNumber]": opts.quoteNumber,
+    "metadata[quoteToken]": opts.quoteToken,
+  });
+  const session = await stripeApi("checkout/sessions", body);
+  return { id: session.id, url: session.url };
+}
+
+/**
  * Verify a Stripe webhook signature (t=…,v1=…) against STRIPE_WEBHOOK_SECRET
  * using a constant-time compare. Returns the parsed event or null.
  */

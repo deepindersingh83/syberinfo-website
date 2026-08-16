@@ -3,10 +3,12 @@ import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { buildConfig, type Access, type EmailAdapter, type Field } from "payload";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
+import { postgresAdapter } from "@payloadcms/db-postgres";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import sharp from "sharp";
 
 import { migrations } from "./src/migrations";
+import { migrations as pgMigrations } from "./src/migrations/pg";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -107,6 +109,27 @@ function resolveSecret(): string {
 }
 const PAYLOAD_SECRET = resolveSecret();
 
+/**
+ * Select the database adapter from DATABASE_URI. A postgres:// / postgresql://
+ * URL uses Postgres (recommended for production — real backups, no
+ * relative-path/locking pitfalls); anything else falls back to SQLite, which
+ * keeps local development zero-setup. Each adapter points at its own migration
+ * directory because the generated SQL is dialect-specific.
+ */
+const DATABASE_URI = process.env.DATABASE_URI || "file:./syberinfo.db";
+const usePostgres = /^postgres(ql)?:\/\//i.test(DATABASE_URI);
+const dbAdapter = usePostgres
+  ? postgresAdapter({
+      pool: { connectionString: DATABASE_URI },
+      migrationDir: path.resolve(dirname, "src/migrations/pg"),
+      prodMigrations: pgMigrations as unknown as Parameters<typeof postgresAdapter>[0]["prodMigrations"],
+    })
+  : sqliteAdapter({
+      client: { url: DATABASE_URI },
+      migrationDir: path.resolve(dirname, "src/migrations"),
+      prodMigrations: migrations,
+    });
+
 const ACCENTS = [
   "from-cyan-glow to-violet-glow",
   "from-violet-glow to-pink-glow",
@@ -174,18 +197,15 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, "src/payload-types.ts"),
   },
-  db: sqliteAdapter({
-    client: {
-      url: process.env.DATABASE_URI || "file:./syberinfo.db",
-    },
-    migrationDir: path.resolve(dirname, "src/migrations"),
-    // In development Payload auto-pushes the schema. In production these
-    // bundled migrations run automatically on startup, so the database is
-    // ready with no manual migrate step on deploy. After changing
-    // collections/fields, regenerate with `npm run payload migrate:create`
-    // and commit the new files in src/migrations (see DEPLOY.md).
-    prodMigrations: migrations,
-  }),
+  // Database adapter is chosen from DATABASE_URI: a postgres:// (or
+  // postgresql://) URL selects Postgres; anything else (or unset) stays on
+  // SQLite. Migration SQL is dialect-specific, so each adapter keeps its own
+  // migration set — Postgres in src/migrations/pg, SQLite in src/migrations.
+  // In development Payload auto-pushes the schema (no migration files needed);
+  // in production these bundled migrations run automatically on startup.
+  // After changing collections/fields, regenerate with
+  // `npm run payload migrate:create` while pointed at the target database.
+  db: dbAdapter,
   sharp,
   collections: [
     {
@@ -1297,6 +1317,7 @@ export default buildConfig({
         { name: "validUntil", type: "date" },
         { name: "acceptToken", type: "text", unique: true, admin: { readOnly: true, description: "Used in the public accept link" } },
         { name: "acceptedAt", type: "date", admin: { readOnly: true } },
+        { name: "paidAt", type: "date", admin: { readOnly: true, description: "Set when the prospect pays online via Stripe" } },
       ],
     },
     {
