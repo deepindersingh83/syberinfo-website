@@ -1057,6 +1057,58 @@ export default buildConfig({
       ],
     },
     {
+      slug: "assets",
+      labels: { singular: "Asset", plural: "Assets & Licenses" },
+      admin: {
+        useAsTitle: "name",
+        group: "Billing",
+        defaultColumns: ["name", "customer", "category", "renewalDate", "status"],
+        description: "Hardware, software and licenses per client — with renewal dates for reminders and upsell.",
+      },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          ({ data }) => {
+            // Auto-derive lifecycle status from the renewal date, unless the
+            // asset has been manually retired.
+            if (data && data.status !== "retired" && data.renewalDate) {
+              const due = new Date(data.renewalDate as string).getTime();
+              const now = Date.now();
+              const days = (due - now) / 86_400_000;
+              data.status = days < 0 ? "expired" : days <= 30 ? "expiring" : "active";
+            }
+            return data;
+          },
+        ],
+      },
+      fields: [
+        { name: "name", type: "text", required: true, admin: { description: "e.g. Dell Latitude 5450, Microsoft 365 Business Premium" } },
+        { name: "customer", type: "relationship", relationTo: "customers", admin: { description: "The client this asset belongs to" } },
+        {
+          name: "category",
+          type: "select",
+          defaultValue: "hardware",
+          options: ["hardware", "software", "license", "subscription", "other"].map((v) => ({ label: v, value: v })),
+        },
+        { name: "vendor", type: "text", admin: { description: "e.g. Dell, Microsoft, Adobe" } },
+        { name: "identifier", type: "text", admin: { description: "Serial / asset tag / license key" } },
+        { name: "quantity", type: "number", defaultValue: 1, admin: { description: "Seats / units" } },
+        { name: "unitCost", type: "number", admin: { description: "ex-GST AUD per unit — used for renewal value / upsell" } },
+        { name: "purchaseDate", type: "date" },
+        { name: "renewalDate", type: "date", admin: { description: "Warranty end / license or subscription renewal date" } },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "active",
+          admin: { description: "Auto-set from the renewal date unless 'retired'." },
+          options: ["active", "expiring", "expired", "retired"].map((v) => ({ label: v, value: v })),
+        },
+        { name: "autoRemind", type: "checkbox", defaultValue: true, admin: { description: "Email the client before this renews" } },
+        { name: "lastReminderAt", type: "date", admin: { readOnly: true, description: "Set when a renewal reminder was last sent" } },
+        { name: "notes", type: "textarea" },
+      ],
+    },
+    {
       slug: "tickets",
       labels: { singular: "Ticket", plural: "Support Tickets" },
       admin: {

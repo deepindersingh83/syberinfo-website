@@ -46,7 +46,8 @@ async function findForCustomer(
     | "client-domains"
     | "invoices"
     | "transactions"
-    | "tickets",
+    | "tickets"
+    | "assets",
   customerId: string | number,
   opts: { sort?: string; limit?: number } = {},
 ) {
@@ -70,6 +71,8 @@ export const getMyInvoices = (id: string | number) =>
   findForCustomer("invoices", id, { sort: "-dueDate" });
 export const getMyTickets = (id: string | number) =>
   findForCustomer("tickets", id, { sort: "-updatedAt" });
+export const getMyAssets = (id: string | number) =>
+  findForCustomer("assets", id, { sort: "renewalDate" });
 
 export async function getMyInvoice(id: string, customerId: string | number) {
   const payload = await getPayload({ config });

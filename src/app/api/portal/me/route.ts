@@ -4,6 +4,7 @@ import {
   getMyInvoices,
   getMyTickets,
   getMyDomains,
+  getMyAssets,
 } from "@/lib/customer";
 import { json } from "@/lib/api";
 
@@ -23,11 +24,12 @@ export async function GET() {
   const customer = await getCurrentCustomer();
   if (!customer) return json({ authenticated: false }, 200);
 
-  const [subs, invoices, tickets, domains] = await Promise.all([
+  const [subs, invoices, tickets, domains, assets] = await Promise.all([
     getMyServices(customer.id),
     getMyInvoices(customer.id),
     getMyTickets(customer.id),
     getMyDomains(customer.id),
+    getMyAssets(customer.id),
   ]);
 
   return json({
@@ -73,6 +75,15 @@ export async function GET() {
       status: s(d.status),
       expiryDate: s(d.expiryDate),
       autoRenew: Boolean(d.autoRenew),
+    })),
+    assets: (assets as Rec[]).map((d) => ({
+      id: s(d.id),
+      name: s(d.name),
+      category: s(d.category),
+      vendor: s(d.vendor),
+      quantity: n(d.quantity),
+      renewalDate: s(d.renewalDate),
+      status: s(d.status),
     })),
   });
 }
