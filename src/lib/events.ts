@@ -20,6 +20,7 @@ export type EventName =
   | "quote.paid"
   | "asset.renewal_due"
   | "review.submitted"
+  | "referral.created"
   | "ticket.created";
 
 function targets(): string[] {

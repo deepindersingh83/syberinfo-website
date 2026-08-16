@@ -1,6 +1,7 @@
 import { getPayload } from "payload";
 import config from "@payload-config";
 import { logger } from "@/lib/logger";
+import { emitEvent } from "@/lib/events";
 import {
   products as fallbackProducts,
   plans as fallbackPlans,
@@ -748,6 +749,7 @@ export type LeadAttribution = {
   campaign?: string;
   referrer?: string;
   landingPage?: string;
+  referralCode?: string;
 };
 export type LeadInput = {
   name: string;
@@ -778,9 +780,70 @@ export async function saveLead(lead: LeadInput): Promise<string | number | null>
         attribution: lead.attribution,
       },
     });
-    return (doc as { id: string | number }).id;
+    const leadId = (doc as { id: string | number }).id;
+
+    // If the lead arrived with a referral code, record the referral against the
+    // matching active code (best-effort — never fail the enquiry over this).
+    const refCode = lead.attribution?.referralCode?.trim().toUpperCase();
+    if (refCode) {
+      recordReferral(payload, refCode, leadId, lead.name, lead.email).catch(() => {});
+    }
+    return leadId;
   } catch (err) {
     logger.error("saveLead failed", { email: lead.email, message: err instanceof Error ? err.message : String(err) });
     return null;
   }
+}
+
+/** Log a referral for a valid, active code and bump its usage counter. */
+async function recordReferral(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  refCode: string,
+  leadId: string | number,
+  name: string,
+  email: string,
+): Promise<void> {
+  const { docs } = await payload.find({
+    collection: "referral-codes",
+    where: { and: [{ code: { equals: refCode } }, { active: { equals: true } }] },
+    limit: 1,
+    overrideAccess: true,
+  });
+  const codeDoc = docs[0] as unknown as Record<string, unknown> | undefined;
+  if (!codeDoc) return; // unknown/inactive code — ignore silently
+
+  await payload.create({
+    collection: "referrals",
+    overrideAccess: true,
+    data: {
+      refCode,
+      code: codeDoc.id as number,
+      lead: Number(leadId),
+      name,
+      email,
+      status: "pending",
+    },
+  });
+  await payload.update({
+    collection: "referral-codes",
+    id: codeDoc.id as string,
+    overrideAccess: true,
+    data: { timesUsed: (Number(codeDoc.timesUsed) || 0) + 1 },
+  });
+
+  const notify = codeDoc.email ? String(codeDoc.email) : process.env.CONTACT_TO;
+  if (notify) {
+    try {
+      await payload.sendEmail({
+        to: notify,
+        subject: `🎁 New referral via ${refCode}`,
+        html: `<p>A new enquiry arrived using referral code <strong>${refCode}</strong>${
+          codeDoc.partner ? ` (${String(codeDoc.partner)})` : ""
+        }.</p><p>${name} — ${email}</p>`,
+      });
+    } catch {
+      /* best-effort */
+    }
+  }
+  await emitEvent("referral.created", { code: refCode, name, email });
 }

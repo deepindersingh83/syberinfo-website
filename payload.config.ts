@@ -624,8 +624,62 @@ export default buildConfig({
             { name: "campaign", type: "text", admin: { description: "utm_campaign" } },
             { name: "referrer", type: "text" },
             { name: "landingPage", type: "text" },
+            { name: "referralCode", type: "text", admin: { description: "Referral/partner code (?ref=) this lead arrived with" } },
           ],
         },
+      ],
+    },
+    {
+      slug: "referral-codes",
+      labels: { singular: "Referral Code", plural: "Referral Codes" },
+      admin: {
+        useAsTitle: "code",
+        group: "Sales",
+        defaultColumns: ["code", "partner", "active", "timesUsed"],
+        description: "Trackable ?ref= codes for partners and referrers. Share syberinfo.com.au/?ref=CODE.",
+      },
+      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeValidate: [
+          ({ data }) => {
+            if (data?.code) data.code = String(data.code).trim().toUpperCase().replace(/\s+/g, "");
+            return data;
+          },
+        ],
+      },
+      fields: [
+        { name: "code", type: "text", required: true, unique: true, admin: { description: "Short code, e.g. ACME25. Case-insensitive." } },
+        { name: "partner", type: "text", admin: { description: "Who this code belongs to (partner / referrer name)." } },
+        { name: "email", type: "email", admin: { description: "Where to send referral notifications." } },
+        { name: "reward", type: "text", admin: { description: "Free-text reward note, e.g. '$100 credit per converted referral'." } },
+        { name: "active", type: "checkbox", defaultValue: true },
+        { name: "timesUsed", type: "number", defaultValue: 0, admin: { readOnly: true, description: "Leads that arrived with this code." } },
+        { name: "notes", type: "textarea" },
+      ],
+    },
+    {
+      slug: "referrals",
+      labels: { singular: "Referral", plural: "Referrals" },
+      admin: {
+        useAsTitle: "refCode",
+        group: "Sales",
+        defaultColumns: ["refCode", "name", "status", "createdAt"],
+        description: "Each lead that arrived via a referral code. Mark rewarded once paid out.",
+      },
+      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      fields: [
+        { name: "refCode", type: "text", required: true, admin: { description: "The code used (snapshot)." } },
+        { name: "code", type: "relationship", relationTo: "referral-codes" },
+        { name: "lead", type: "relationship", relationTo: "leads" },
+        { name: "name", type: "text" },
+        { name: "email", type: "email" },
+        {
+          name: "status",
+          type: "select",
+          defaultValue: "pending",
+          options: ["pending", "qualified", "rewarded", "rejected"].map((v) => ({ label: v, value: v })),
+        },
+        { name: "value", type: "number", admin: { description: "Reward amount, if any." } },
       ],
     },
     {
