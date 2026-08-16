@@ -1317,6 +1317,7 @@ export default buildConfig({
         { name: "validUntil", type: "date" },
         { name: "acceptToken", type: "text", unique: true, admin: { readOnly: true, description: "Used in the public accept link" } },
         { name: "acceptedAt", type: "date", admin: { readOnly: true } },
+        { name: "paidAt", type: "date", admin: { readOnly: true, description: "Set when the prospect pays online via Stripe" } },
       ],
     },
     {

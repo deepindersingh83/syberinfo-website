@@ -17,6 +17,7 @@ export type EventName =
   | "subscription.suspended"
   | "quote.sent"
   | "quote.accepted"
+  | "quote.paid"
   | "ticket.created";
 
 function targets(): string[] {

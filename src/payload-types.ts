@@ -1196,6 +1196,10 @@ export interface Quote {
    */
   acceptToken?: string | null;
   acceptedAt?: string | null;
+  /**
+   * Set when the prospect pays online via Stripe
+   */
+  paidAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2148,6 +2152,7 @@ export interface QuotesSelect<T extends boolean = true> {
   validUntil?: T;
   acceptToken?: T;
   acceptedAt?: T;
+  paidAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
