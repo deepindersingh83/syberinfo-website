@@ -23,6 +23,7 @@ import * as migration_20260815_163058_phase13_page_body from './20260815_163058_
 import * as migration_20260816_024155_phase15_quote_paid from './20260816_024155_phase15_quote_paid';
 import * as migration_20260816_035725_phase16_assets from './20260816_035725_phase16_assets';
 import * as migration_20260816_042705_phase18_authors from './20260816_042705_phase18_authors';
+import * as migration_20260816_043415_phase19_reviews from './20260816_043415_phase19_reviews';
 
 export const migrations = [
   {
@@ -148,6 +149,11 @@ export const migrations = [
   {
     up: migration_20260816_042705_phase18_authors.up,
     down: migration_20260816_042705_phase18_authors.down,
-    name: '20260816_042705_phase18_authors'
+    name: '20260816_042705_phase18_authors',
+  },
+  {
+    up: migration_20260816_043415_phase19_reviews.up,
+    down: migration_20260816_043415_phase19_reviews.down,
+    name: '20260816_043415_phase19_reviews'
   },
 ];

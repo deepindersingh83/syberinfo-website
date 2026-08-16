@@ -519,6 +519,8 @@ export interface Software {
   createdAt: string;
 }
 /**
+ * Client reviews. Public submissions arrive unapproved — tick Approved to publish.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "testimonials".
  */
@@ -526,7 +528,23 @@ export interface Testimonial {
   id: number;
   quote: string;
   name: string;
+  /**
+   * e.g. Practice Manager
+   */
   role?: string | null;
+  company?: string | null;
+  /**
+   * Star rating 1–5. Feeds the aggregate rating shown in search results.
+   */
+  rating?: number | null;
+  /**
+   * Untick to hide. Public submissions start unapproved.
+   */
+  approved?: boolean | null;
+  /**
+   * Set automatically for public submissions.
+   */
+  submittedAt?: string | null;
   order?: number | null;
   updatedAt: string;
   createdAt: string;
@@ -1774,6 +1792,10 @@ export interface TestimonialsSelect<T extends boolean = true> {
   quote?: T;
   name?: T;
   role?: T;
+  company?: T;
+  rating?: T;
+  approved?: T;
+  submittedAt?: T;
   order?: T;
   updatedAt?: T;
   createdAt?: T;
