@@ -12,6 +12,7 @@ export type Attribution = {
   campaign?: string;
   referrer?: string;
   landingPage?: string;
+  referralCode?: string;
 };
 
 const KEY = "si_attribution";
@@ -28,6 +29,7 @@ export function captureAttribution(): void {
       campaign: p.get("utm_campaign") || undefined,
       referrer: document.referrer ? new URL(document.referrer).hostname : undefined,
       landingPage: window.location.pathname || undefined,
+      referralCode: (p.get("ref") || "").trim().toUpperCase() || undefined,
     };
     sessionStorage.setItem(KEY, JSON.stringify(data));
   } catch {

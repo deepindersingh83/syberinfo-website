@@ -76,6 +76,8 @@ export interface Config {
     posts: Post;
     authors: Author;
     leads: Lead;
+    'referral-codes': ReferralCode;
+    referrals: Referral;
     plans: Plan;
     partners: Partner;
     faqs: Faq;
@@ -116,6 +118,8 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     leads: LeadsSelect<false> | LeadsSelect<true>;
+    'referral-codes': ReferralCodesSelect<false> | ReferralCodesSelect<true>;
+    referrals: ReferralsSelect<false> | ReferralsSelect<true>;
     plans: PlansSelect<false> | PlansSelect<true>;
     partners: PartnersSelect<false> | PartnersSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
@@ -693,7 +697,68 @@ export interface Lead {
     campaign?: string | null;
     referrer?: string | null;
     landingPage?: string | null;
+    /**
+     * Referral/partner code (?ref=) this lead arrived with
+     */
+    referralCode?: string | null;
   };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Trackable ?ref= codes for partners and referrers. Share syberinfo.com.au/?ref=CODE.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "referral-codes".
+ */
+export interface ReferralCode {
+  id: number;
+  /**
+   * Short code, e.g. ACME25. Case-insensitive.
+   */
+  code: string;
+  /**
+   * Who this code belongs to (partner / referrer name).
+   */
+  partner?: string | null;
+  /**
+   * Where to send referral notifications.
+   */
+  email?: string | null;
+  /**
+   * Free-text reward note, e.g. '$100 credit per converted referral'.
+   */
+  reward?: string | null;
+  active?: boolean | null;
+  /**
+   * Leads that arrived with this code.
+   */
+  timesUsed?: number | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Each lead that arrived via a referral code. Mark rewarded once paid out.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "referrals".
+ */
+export interface Referral {
+  id: number;
+  /**
+   * The code used (snapshot).
+   */
+  refCode: string;
+  code?: (number | null) | ReferralCode;
+  lead?: (number | null) | Lead;
+  name?: string | null;
+  email?: string | null;
+  status?: ('pending' | 'qualified' | 'rewarded' | 'rejected') | null;
+  /**
+   * Reward amount, if any.
+   */
+  value?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1472,6 +1537,14 @@ export interface PayloadLockedDocument {
         value: number | Lead;
       } | null)
     | ({
+        relationTo: 'referral-codes';
+        value: number | ReferralCode;
+      } | null)
+    | ({
+        relationTo: 'referrals';
+        value: number | Referral;
+      } | null)
+    | ({
         relationTo: 'plans';
         value: number | Plan;
       } | null)
@@ -1863,7 +1936,38 @@ export interface LeadsSelect<T extends boolean = true> {
         campaign?: T;
         referrer?: T;
         landingPage?: T;
+        referralCode?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "referral-codes_select".
+ */
+export interface ReferralCodesSelect<T extends boolean = true> {
+  code?: T;
+  partner?: T;
+  email?: T;
+  reward?: T;
+  active?: T;
+  timesUsed?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "referrals_select".
+ */
+export interface ReferralsSelect<T extends boolean = true> {
+  refCode?: T;
+  code?: T;
+  lead?: T;
+  name?: T;
+  email?: T;
+  status?: T;
+  value?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -24,6 +24,7 @@ const schema = z.object({
       campaign: z.string().trim().max(200).optional(),
       referrer: z.string().trim().max(500).optional(),
       landingPage: z.string().trim().max(500).optional(),
+      referralCode: z.string().trim().max(64).optional(),
     })
     .optional(),
 });
