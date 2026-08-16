@@ -445,17 +445,37 @@ export default buildConfig({
     },
     {
       slug: "testimonials",
+      labels: { singular: "Review", plural: "Reviews & Testimonials" },
       admin: {
         useAsTitle: "name",
-        defaultColumns: ["name", "role", "order"],
+        defaultColumns: ["name", "company", "rating", "approved", "order"],
         group: "Content",
+        description: "Client reviews. Public submissions arrive unapproved — tick Approved to publish.",
       },
-      access: { read: () => true },
+      access: {
+        // Public sees approved reviews only; admins see everything (incl. the
+        // moderation queue). Submissions come in via /api/reviews.
+        read: ({ req: { user } }) =>
+          isAdmin(user as AuthedUser) ? true : { approved: { equals: true } },
+        create: adminOnly,
+        update: adminOnly,
+        delete: adminOnly,
+      },
       defaultSort: "order",
       fields: [
         { name: "quote", type: "textarea", required: true },
         { name: "name", type: "text", required: true },
-        { name: "role", type: "text" },
+        { name: "role", type: "text", admin: { description: "e.g. Practice Manager" } },
+        { name: "company", type: "text" },
+        {
+          name: "rating",
+          type: "number",
+          min: 1,
+          max: 5,
+          admin: { description: "Star rating 1–5. Feeds the aggregate rating shown in search results." },
+        },
+        { name: "approved", type: "checkbox", defaultValue: true, admin: { description: "Untick to hide. Public submissions start unapproved." } },
+        { name: "submittedAt", type: "date", admin: { readOnly: true, description: "Set automatically for public submissions." } },
         { name: "order", type: "number", defaultValue: 0 },
       ],
     },
@@ -1939,7 +1959,7 @@ export default buildConfig({
         const t = seedTestimonials[i];
         await payload.create({
           collection: "testimonials",
-          data: { quote: t.quote, name: t.name, role: t.role, order: i },
+          data: { quote: t.quote, name: t.name, role: t.role, rating: 5, approved: true, order: i },
         });
       }
       payload.logger.info(`Seeded ${seedTestimonials.length} testimonials`);

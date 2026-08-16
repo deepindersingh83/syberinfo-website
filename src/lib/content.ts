@@ -29,7 +29,7 @@ import {
   type CaseStudy,
 } from "./it-data";
 
-type Testimonial = { quote: string; name: string; role: string };
+type Testimonial = { quote: string; name: string; role: string; company?: string; rating?: number };
 type Stat = { value: string; label: string };
 type Step = { n: string; title: string; text: string };
 
@@ -432,19 +432,48 @@ export async function getTestimonials(): Promise<Testimonial[]> {
   return tryPayload(async (payload) => {
     const { docs } = await payload.find({
       collection: "testimonials",
+      // Local API bypasses access control by default, so filter explicitly:
+      // only approved reviews are ever shown publicly.
+      where: { approved: { equals: true } },
       sort: "order",
       limit: 100,
     });
     if (!docs.length) return fallbackTestimonials;
-    return docs.map((d) => {
-      const doc = d as unknown as Record<string, unknown>;
-      return {
-        quote: String(doc.quote ?? ""),
-        name: String(doc.name ?? ""),
-        role: String(doc.role ?? ""),
-      };
-    });
+    return docs.map(mapTestimonial);
   }, fallbackTestimonials);
+}
+
+function mapTestimonial(d: unknown): Testimonial {
+  const doc = d as Record<string, unknown>;
+  const rating = doc.rating == null ? undefined : Number(doc.rating);
+  return {
+    quote: String(doc.quote ?? ""),
+    name: String(doc.name ?? ""),
+    role: String(doc.role ?? ""),
+    company: doc.company ? String(doc.company) : undefined,
+    rating: rating && rating >= 1 && rating <= 5 ? rating : undefined,
+  };
+}
+
+/**
+ * Aggregate rating over approved reviews that carry a star rating. Returns null
+ * when there aren't enough to be meaningful (schema needs a real sample).
+ */
+export async function getReviewStats(): Promise<{ average: number; count: number } | null> {
+  return tryPayload(async (payload) => {
+    const { docs } = await payload.find({
+      collection: "testimonials",
+      where: { and: [{ approved: { equals: true } }, { rating: { greater_than_equal: 1 } }] },
+      limit: 500,
+      depth: 0,
+    });
+    const ratings = docs
+      .map((d) => Number((d as unknown as Record<string, unknown>).rating))
+      .filter((n) => n >= 1 && n <= 5);
+    if (ratings.length === 0) return null;
+    const average = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    return { average: Math.round(average * 10) / 10, count: ratings.length };
+  }, null);
 }
 
 /** Extract a usable URL from a populated Payload upload relationship. */
