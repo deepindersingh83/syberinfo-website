@@ -1049,6 +1049,37 @@ export default buildConfig({
       ],
     },
     {
+      slug: "usage-records",
+      labels: { singular: "Usage Record", plural: "Usage (Metered)" },
+      admin: {
+        useAsTitle: "description",
+        group: "Billing",
+        defaultColumns: ["description", "customer", "quantity", "amount", "billed"],
+        description: "Metered usage (per-seat overages, cloud resell, support hours). Unbilled records are rolled into the next renewal invoice.",
+      },
+      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      hooks: {
+        beforeChange: [
+          ({ data }) => {
+            // Line total = quantity × unit amount, kept in sync automatically.
+            if (data) data.amount = (Number(data.quantity) || 0) * (Number(data.unitAmount) || 0);
+            return data;
+          },
+        ],
+      },
+      fields: [
+        { name: "description", type: "text", required: true, admin: { description: "Line-item text, e.g. 'Extra mailbox — March'" } },
+        { name: "customer", type: "relationship", relationTo: "customers" },
+        { name: "subscription", type: "relationship", relationTo: "subscriptions", admin: { description: "Bills onto this subscription's next renewal invoice." } },
+        { name: "quantity", type: "number", defaultValue: 1 },
+        { name: "unitAmount", type: "number", admin: { description: "ex-GST AUD per unit" } },
+        { name: "amount", type: "number", admin: { readOnly: true, description: "Auto: quantity × unit amount." } },
+        { name: "billed", type: "checkbox", defaultValue: false, admin: { description: "Set automatically when rolled into an invoice." } },
+        { name: "billedInvoice", type: "relationship", relationTo: "invoices", admin: { readOnly: true } },
+        { name: "occurredAt", type: "date", admin: { description: "When the usage happened (defaults to now)." } },
+      ],
+    },
+    {
       slug: "invoices",
       labels: { singular: "Invoice", plural: "Invoices" },
       admin: { useAsTitle: "number", group: "Billing", defaultColumns: ["number", "customer", "total", "status", "dueDate"] },

@@ -89,6 +89,7 @@ export interface Config {
     customers: Customer;
     orders: Order;
     subscriptions: Subscription;
+    'usage-records': UsageRecord;
     invoices: Invoice;
     transactions: Transaction;
     'client-domains': ClientDomain;
@@ -131,6 +132,7 @@ export interface Config {
     customers: CustomersSelect<false> | CustomersSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
+    'usage-records': UsageRecordsSelect<false> | UsageRecordsSelect<true>;
     invoices: InvoicesSelect<false> | InvoicesSelect<true>;
     transactions: TransactionsSelect<false> | TransactionsSelect<true>;
     'client-domains': ClientDomainsSelect<false> | ClientDomainsSelect<true>;
@@ -1011,6 +1013,44 @@ export interface Subscription {
   createdAt: string;
 }
 /**
+ * Metered usage (per-seat overages, cloud resell, support hours). Unbilled records are rolled into the next renewal invoice.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "usage-records".
+ */
+export interface UsageRecord {
+  id: number;
+  /**
+   * Line-item text, e.g. 'Extra mailbox — March'
+   */
+  description: string;
+  customer?: (number | null) | Customer;
+  /**
+   * Bills onto this subscription's next renewal invoice.
+   */
+  subscription?: (number | null) | Subscription;
+  quantity?: number | null;
+  /**
+   * ex-GST AUD per unit
+   */
+  unitAmount?: number | null;
+  /**
+   * Auto: quantity × unit amount.
+   */
+  amount?: number | null;
+  /**
+   * Set automatically when rolled into an invoice.
+   */
+  billed?: boolean | null;
+  billedInvoice?: (number | null) | Invoice;
+  /**
+   * When the usage happened (defaults to now).
+   */
+  occurredAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "invoices".
  */
@@ -1587,6 +1627,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subscriptions';
         value: number | Subscription;
+      } | null)
+    | ({
+        relationTo: 'usage-records';
+        value: number | UsageRecord;
       } | null)
     | ({
         relationTo: 'invoices';
@@ -2202,6 +2246,23 @@ export interface SubscriptionsSelect<T extends boolean = true> {
   recurringAmount?: T;
   nextDueDate?: T;
   provisioningRef?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "usage-records_select".
+ */
+export interface UsageRecordsSelect<T extends boolean = true> {
+  description?: T;
+  customer?: T;
+  subscription?: T;
+  quantity?: T;
+  unitAmount?: T;
+  amount?: T;
+  billed?: T;
+  billedInvoice?: T;
+  occurredAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

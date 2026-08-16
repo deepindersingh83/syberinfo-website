@@ -25,6 +25,7 @@ import * as migration_20260816_035725_phase16_assets from './20260816_035725_pha
 import * as migration_20260816_042705_phase18_authors from './20260816_042705_phase18_authors';
 import * as migration_20260816_043415_phase19_reviews from './20260816_043415_phase19_reviews';
 import * as migration_20260816_055346_phase21_referrals from './20260816_055346_phase21_referrals';
+import * as migration_20260816_060014_phase22_usage from './20260816_060014_phase22_usage';
 
 export const migrations = [
   {
@@ -160,6 +161,11 @@ export const migrations = [
   {
     up: migration_20260816_055346_phase21_referrals.up,
     down: migration_20260816_055346_phase21_referrals.down,
-    name: '20260816_055346_phase21_referrals'
+    name: '20260816_055346_phase21_referrals',
+  },
+  {
+    up: migration_20260816_060014_phase22_usage.up,
+    down: migration_20260816_060014_phase22_usage.down,
+    name: '20260816_060014_phase22_usage'
   },
 ];
