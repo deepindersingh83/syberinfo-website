@@ -109,7 +109,17 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    customers: {
+      services: 'subscriptions';
+      invoicesList: 'invoices';
+      transactionsList: 'transactions';
+      quotesList: 'quotes';
+      ticketsList: 'tickets';
+      assetsList: 'assets';
+      domainsList: 'client-domains';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     services: ServicesSelect<false> | ServicesSelect<true>;
@@ -919,6 +929,8 @@ export interface DataRequest {
   createdAt: string;
 }
 /**
+ * Every client in one place. Open a client to see and manage all their services, invoices, tickets, assets and domains.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "customers".
  */
@@ -934,6 +946,41 @@ export interface Customer {
   state?: string | null;
   postcode?: string | null;
   country?: string | null;
+  services?: {
+    docs?: (number | Subscription)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  invoicesList?: {
+    docs?: (number | Invoice)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  transactionsList?: {
+    docs?: (number | Transaction)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  quotesList?: {
+    docs?: (number | Quote)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  ticketsList?: {
+    docs?: (number | Ticket)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  assetsList?: {
+    docs?: (number | Asset)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  domainsList?: {
+    docs?: (number | ClientDomain)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -952,36 +999,6 @@ export interface Customer {
     | null;
   password?: string | null;
   collection: 'customers';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "orders".
- */
-export interface Order {
-  id: number;
-  customer?: (number | null) | Customer;
-  items?:
-    | {
-        description: string;
-        /**
-         * e.g. monthly, annually, once-off
-         */
-        cycle?: string | null;
-        quantity?: number | null;
-        /**
-         * ex-GST, AUD
-         */
-        unitPrice?: number | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * ex-GST, AUD
-   */
-  total?: number | null;
-  status?: ('pending' | 'active' | 'cancelled' | 'fraud') | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1009,44 +1026,6 @@ export interface Subscription {
    * e.g. cPanel username (Phase 3)
    */
   provisioningRef?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Metered usage (per-seat overages, cloud resell, support hours). Unbilled records are rolled into the next renewal invoice.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "usage-records".
- */
-export interface UsageRecord {
-  id: number;
-  /**
-   * Line-item text, e.g. 'Extra mailbox — March'
-   */
-  description: string;
-  customer?: (number | null) | Customer;
-  /**
-   * Bills onto this subscription's next renewal invoice.
-   */
-  subscription?: (number | null) | Subscription;
-  quantity?: number | null;
-  /**
-   * ex-GST AUD per unit
-   */
-  unitAmount?: number | null;
-  /**
-   * Auto: quantity × unit amount.
-   */
-  amount?: number | null;
-  /**
-   * Set automatically when rolled into an invoice.
-   */
-  billed?: boolean | null;
-  billedInvoice?: (number | null) | Invoice;
-  /**
-   * When the usage happened (defaults to now).
-   */
-  occurredAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1110,17 +1089,91 @@ export interface Transaction {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "client-domains".
+ * via the `definition` "quotes".
  */
-export interface ClientDomain {
+export interface Quote {
   id: number;
-  domain: string;
+  /**
+   * Auto-generated
+   */
+  number?: string | null;
+  prospectName: string;
+  prospectEmail: string;
+  /**
+   * Link once they're a client
+   */
   customer?: (number | null) | Customer;
-  registrar?: string | null;
-  registeredDate?: string | null;
-  expiryDate?: string | null;
-  autoRenew?: boolean | null;
-  status?: ('pending' | 'active' | 'expired' | 'transferred-away') | null;
+  /**
+   * e.g. Managed IT proposal
+   */
+  title?: string | null;
+  /**
+   * Optional summary shown above the line items
+   */
+  intro?: string | null;
+  items?:
+    | {
+        description: string;
+        quantity?: number | null;
+        /**
+         * ex-GST, AUD
+         */
+        unitPrice?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  subtotal?: number | null;
+  /**
+   * GST
+   */
+  tax?: number | null;
+  total?: number | null;
+  status?: ('draft' | 'sent' | 'accepted' | 'declined' | 'expired') | null;
+  validUntil?: string | null;
+  /**
+   * Used in the public accept link
+   */
+  acceptToken?: string | null;
+  acceptedAt?: string | null;
+  /**
+   * Set when the prospect pays online via Stripe
+   */
+  paidAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tickets".
+ */
+export interface Ticket {
+  id: number;
+  subject: string;
+  customer?: (number | null) | Customer;
+  /**
+   * Engineer responsible for this ticket
+   */
+  assignee?: (number | null) | User;
+  department?: ('support' | 'billing' | 'sales') | null;
+  status?: ('open' | 'answered' | 'customer-reply' | 'closed') | null;
+  priority?: ('low' | 'medium' | 'high') | null;
+  /**
+   * First-response SLA deadline
+   */
+  slaDueAt?: string | null;
+  firstRespondedAt?: string | null;
+  resolvedAt?: string | null;
+  messages?:
+    | {
+        author?: string | null;
+        /**
+         * Was this reply from our team?
+         */
+        staff?: boolean | null;
+        message: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1180,36 +1233,85 @@ export interface Asset {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tickets".
+ * via the `definition` "client-domains".
  */
-export interface Ticket {
+export interface ClientDomain {
   id: number;
-  subject: string;
+  domain: string;
   customer?: (number | null) | Customer;
-  /**
-   * Engineer responsible for this ticket
-   */
-  assignee?: (number | null) | User;
-  department?: ('support' | 'billing' | 'sales') | null;
-  status?: ('open' | 'answered' | 'customer-reply' | 'closed') | null;
-  priority?: ('low' | 'medium' | 'high') | null;
-  /**
-   * First-response SLA deadline
-   */
-  slaDueAt?: string | null;
-  firstRespondedAt?: string | null;
-  resolvedAt?: string | null;
-  messages?:
+  registrar?: string | null;
+  registeredDate?: string | null;
+  expiryDate?: string | null;
+  autoRenew?: boolean | null;
+  status?: ('pending' | 'active' | 'expired' | 'transferred-away') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders".
+ */
+export interface Order {
+  id: number;
+  customer?: (number | null) | Customer;
+  items?:
     | {
-        author?: string | null;
+        description: string;
         /**
-         * Was this reply from our team?
+         * e.g. monthly, annually, once-off
          */
-        staff?: boolean | null;
-        message: string;
+        cycle?: string | null;
+        quantity?: number | null;
+        /**
+         * ex-GST, AUD
+         */
+        unitPrice?: number | null;
         id?: string | null;
       }[]
     | null;
+  /**
+   * ex-GST, AUD
+   */
+  total?: number | null;
+  status?: ('pending' | 'active' | 'cancelled' | 'fraud') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Metered usage (per-seat overages, cloud resell, support hours). Unbilled records are rolled into the next renewal invoice.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "usage-records".
+ */
+export interface UsageRecord {
+  id: number;
+  /**
+   * Line-item text, e.g. 'Extra mailbox — March'
+   */
+  description: string;
+  customer?: (number | null) | Customer;
+  /**
+   * Bills onto this subscription's next renewal invoice.
+   */
+  subscription?: (number | null) | Subscription;
+  quantity?: number | null;
+  /**
+   * ex-GST AUD per unit
+   */
+  unitAmount?: number | null;
+  /**
+   * Auto: quantity × unit amount.
+   */
+  amount?: number | null;
+  /**
+   * Set automatically when rolled into an invoice.
+   */
+  billed?: boolean | null;
+  billedInvoice?: (number | null) | Invoice;
+  /**
+   * When the usage happened (defaults to now).
+   */
+  occurredAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1351,61 +1453,6 @@ export interface CaseStudy {
      */
     noindex?: boolean | null;
   };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "quotes".
- */
-export interface Quote {
-  id: number;
-  /**
-   * Auto-generated
-   */
-  number?: string | null;
-  prospectName: string;
-  prospectEmail: string;
-  /**
-   * Link once they're a client
-   */
-  customer?: (number | null) | Customer;
-  /**
-   * e.g. Managed IT proposal
-   */
-  title?: string | null;
-  /**
-   * Optional summary shown above the line items
-   */
-  intro?: string | null;
-  items?:
-    | {
-        description: string;
-        quantity?: number | null;
-        /**
-         * ex-GST, AUD
-         */
-        unitPrice?: number | null;
-        id?: string | null;
-      }[]
-    | null;
-  subtotal?: number | null;
-  /**
-   * GST
-   */
-  tax?: number | null;
-  total?: number | null;
-  status?: ('draft' | 'sent' | 'accepted' | 'declined' | 'expired') | null;
-  validUntil?: string | null;
-  /**
-   * Used in the public accept link
-   */
-  acceptToken?: string | null;
-  acceptedAt?: string | null;
-  /**
-   * Set when the prospect pays online via Stripe
-   */
-  paidAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2196,6 +2243,13 @@ export interface CustomersSelect<T extends boolean = true> {
   state?: T;
   postcode?: T;
   country?: T;
+  services?: T;
+  invoicesList?: T;
+  transactionsList?: T;
+  quotesList?: T;
+  ticketsList?: T;
+  assetsList?: T;
+  domainsList?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
