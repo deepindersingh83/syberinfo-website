@@ -1,7 +1,7 @@
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
-import { buildConfig, type Access, type EmailAdapter, type Field } from "payload";
+import { buildConfig, type Access, type CollectionConfig, type EmailAdapter, type Field } from "payload";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
@@ -18,11 +18,135 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
    customer's billing data via the REST/GraphQL API. These helpers lock each
    collection to admins (the `users` collection) or the owning customer only.
 --------------------------------------------------------------------------- */
-type AuthedUser = { collection?: string; id?: string | number } | null | undefined;
+type StaffRole = "superadmin" | "technician" | "sales" | "readonly";
+type AuthedUser = { collection?: string; id?: string | number; role?: StaffRole } | null | undefined;
 const isAdmin = (user: AuthedUser): boolean => !!user && user.collection === "users";
 
-/** Admins only. */
+/**
+ * A staff member's role. Missing role = superadmin, so existing/migrated admin
+ * accounts (whose row has no role yet) keep full access and are never locked
+ * out. Only the `users` collection carries roles; customers are never staff.
+ */
+const roleOf = (user: AuthedUser): StaffRole => {
+  if (!isAdmin(user)) return "readonly";
+  return (user!.role as StaffRole) || "superadmin";
+};
+const isSuperAdmin = (user: AuthedUser): boolean => isAdmin(user) && roleOf(user) === "superadmin";
+
+/** Any authenticated staff member (all roles). */
 const adminOnly: Access = ({ req: { user } }) => isAdmin(user as AuthedUser);
+
+/** Super-admins only — for user management, settings and content config. */
+const superOnly: Access = ({ req: { user } }) => isSuperAdmin(user as AuthedUser);
+
+/**
+ * Write access for staff whose role is superadmin OR one of `roles`.
+ * readonly staff never pass. Used to scope create/update to the right teams
+ * (e.g. technicians manage support/service, sales manage leads/quotes).
+ */
+const canWrite =
+  (...roles: StaffRole[]): Access =>
+  ({ req: { user } }) => {
+    const u = user as AuthedUser;
+    if (!isAdmin(u)) return false;
+    const r = roleOf(u);
+    return r === "superadmin" || roles.includes(r);
+  };
+
+/**
+ * Write-access presets by team. Spread into a collection's `access` alongside
+ * its `read`. Deletes are super-admin-only everywhere (destructive).
+ *   contentWrite — super-admins only (content, config, settings)
+ *   serviceWrite — super-admins + technicians (support & service delivery)
+ *   salesWrite   — super-admins + sales (leads, quotes, invoices)
+ */
+const contentWrite = { create: superOnly, update: superOnly, delete: superOnly };
+const serviceWrite = { create: canWrite("technician"), update: canWrite("technician"), delete: superOnly };
+const salesWrite = { create: canWrite("sales"), update: canWrite("sales"), delete: superOnly };
+
+/* ---------------------------------------------------------------------------
+   Audit log. Shared hooks that record who (which staff member) changed what,
+   and when. Attached to the sensitive collections below. Best-effort — a
+   logging failure never blocks the underlying write. Only staff actions are
+   logged (customer self-service in the portal is not audited here).
+--------------------------------------------------------------------------- */
+const auditLabel = (doc: Record<string, unknown> | undefined): string => {
+  if (!doc) return "";
+  const v = doc.email ?? doc.number ?? doc.name ?? doc.title ?? doc.label ?? doc.subject ?? doc.code ?? doc.domain ?? doc.id;
+  return String(v ?? "");
+};
+const auditChange = async (args: {
+  req: { user?: AuthedUser & { email?: string }; payload: { create: (a: unknown) => Promise<unknown> } };
+  doc: Record<string, unknown>;
+  operation: string;
+  collection?: { slug?: string };
+}) => {
+  const u = args.req.user;
+  if (!u || u.collection !== "users") return; // only log staff actions
+  try {
+    await args.req.payload.create({
+      collection: "audit-logs",
+      overrideAccess: true,
+      data: {
+        action: args.operation, // "create" | "update"
+        collectionSlug: args.collection?.slug ?? "",
+        documentId: String(args.doc?.id ?? ""),
+        documentLabel: auditLabel(args.doc),
+        user: u.id,
+        userEmail: String(u.email ?? ""),
+      },
+    });
+  } catch {
+    /* never block the write over an audit failure */
+  }
+};
+const auditDelete = async (args: {
+  req: { user?: AuthedUser & { email?: string }; payload: { create: (a: unknown) => Promise<unknown> } };
+  doc?: Record<string, unknown>;
+  id?: string | number;
+  collection?: { slug?: string };
+}) => {
+  const u = args.req.user;
+  if (!u || u.collection !== "users") return;
+  try {
+    await args.req.payload.create({
+      collection: "audit-logs",
+      overrideAccess: true,
+      data: {
+        action: "delete",
+        collectionSlug: args.collection?.slug ?? "",
+        documentId: String(args.id ?? args.doc?.id ?? ""),
+        documentLabel: auditLabel(args.doc),
+        user: u.id,
+        userEmail: String(u.email ?? ""),
+      },
+    });
+  } catch {
+    /* best-effort */
+  }
+};
+
+/**
+ * Inject the audit hooks into every collection (except the audit log itself),
+ * preserving each collection's own hooks. One wrap = full coverage, no risk of
+ * accidentally dropping an existing hook during manual merges.
+ */
+function withAudit(collections: CollectionConfig[]): CollectionConfig[] {
+  return collections.map((c) => {
+    if (c.slug === "audit-logs") return c;
+    const h = (c.hooks ?? {}) as NonNullable<CollectionConfig["hooks"]>;
+    type ACH = NonNullable<NonNullable<CollectionConfig["hooks"]>["afterChange"]>[number];
+    type ADH = NonNullable<NonNullable<CollectionConfig["hooks"]>["afterDelete"]>[number];
+    return {
+      ...c,
+      hooks: {
+        ...h,
+        afterChange: [...(h.afterChange ?? []), auditChange as unknown as ACH],
+        afterDelete: [...(h.afterDelete ?? []), auditDelete as unknown as ADH],
+      },
+    };
+  });
+}
 
 /** Admins see all; a customer sees only their own record. */
 const adminOrSelf: Access = ({ req: { user } }) => {
@@ -211,7 +335,7 @@ export default buildConfig({
   // `npm run payload migrate:create` while pointed at the target database.
   db: dbAdapter,
   sharp,
-  collections: [
+  collections: withAudit([
     {
       slug: "users",
       auth: {
@@ -219,15 +343,70 @@ export default buildConfig({
         lockTime: 10 * 60 * 1000, // 10 minutes
         tokenExpiration: 60 * 60 * 8, // 8 hours
       },
-      admin: { useAsTitle: "email", group: "Settings" },
+      admin: {
+        useAsTitle: "email",
+        group: "Settings",
+        defaultColumns: ["email", "name", "role"],
+        description: "Staff accounts. Roles control what each team member can change. Only super-admins can add users or change roles.",
+      },
       access: {
-        read: adminOnly,
-        create: adminOnly,
-        update: adminOnly,
-        delete: adminOnly,
+        read: adminOnly, // staff can see the team
+        create: superOnly, // only super-admins add staff
+        update: superOnly,
+        delete: superOnly,
       },
       fields: [
         { name: "name", type: "text" },
+        {
+          name: "role",
+          type: "select",
+          defaultValue: "superadmin",
+          required: true,
+          admin: {
+            description:
+              "superadmin = full access · technician = support & service delivery · sales = leads, quotes, invoices · readonly = view only",
+          },
+          // Only super-admins can set or change a role (prevents privilege
+          // escalation). Everyone can read it.
+          access: {
+            create: ({ req: { user } }) => isSuperAdmin(user as AuthedUser),
+            update: ({ req: { user } }) => isSuperAdmin(user as AuthedUser),
+          },
+          options: [
+            { label: "Super admin", value: "superadmin" },
+            { label: "Technician", value: "technician" },
+            { label: "Sales", value: "sales" },
+            { label: "Read only", value: "readonly" },
+          ],
+        },
+      ],
+    },
+    {
+      slug: "audit-logs",
+      labels: { singular: "Audit Log", plural: "Audit Log" },
+      admin: {
+        useAsTitle: "documentLabel",
+        group: "Settings",
+        defaultColumns: ["createdAt", "userEmail", "action", "collectionSlug", "documentLabel"],
+        description: "Who changed what, and when. Written automatically; read-only, super-admins only.",
+      },
+      access: {
+        read: superOnly,
+        create: () => false, // system-written via hooks (overrideAccess)
+        update: () => false,
+        delete: superOnly, // super-admins may prune old entries
+      },
+      fields: [
+        {
+          name: "action",
+          type: "select",
+          options: ["create", "update", "delete"].map((v) => ({ label: v, value: v })),
+        },
+        { name: "collectionSlug", type: "text", label: "Collection" },
+        { name: "documentId", type: "text" },
+        { name: "documentLabel", type: "text", label: "Record" },
+        { name: "user", type: "relationship", relationTo: "users" },
+        { name: "userEmail", type: "text" },
       ],
     },
     {
@@ -237,7 +416,7 @@ export default buildConfig({
         defaultColumns: ["title", "tagline", "order"],
         group: "Content",
       },
-      access: { read: () => true },
+      access: { read: () => true, ...contentWrite },
       defaultSort: "order",
       fields: [
         { name: "title", type: "text", required: true },
@@ -337,7 +516,7 @@ export default buildConfig({
         defaultColumns: ["title", "price", "highlight", "order"],
         group: "Content",
       },
-      access: { read: () => true },
+      access: { read: () => true, ...contentWrite },
       defaultSort: "order",
       fields: [
         { name: "title", type: "text", required: true },
@@ -407,7 +586,7 @@ export default buildConfig({
         group: "Catalog",
         defaultColumns: ["name", "brand", "category", "active"],
       },
-      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: () => true, ...contentWrite },
       fields: [
         { name: "name", type: "text", required: true, admin: { description: "e.g. Microsoft 365" } },
         { name: "brand", type: "text", admin: { description: "Vendor, e.g. Microsoft" } },
@@ -461,9 +640,9 @@ export default buildConfig({
         // moderation queue). Submissions come in via /api/reviews.
         read: ({ req: { user } }) =>
           isAdmin(user as AuthedUser) ? true : { approved: { equals: true } },
-        create: adminOnly,
-        update: adminOnly,
-        delete: adminOnly,
+        create: superOnly,
+        update: superOnly,
+        delete: superOnly,
       },
       defaultSort: "order",
       fields: [
@@ -491,7 +670,7 @@ export default buildConfig({
         defaultColumns: ["title", "category", "date"],
         group: "Content",
       },
-      access: { read: () => true },
+      access: { read: () => true, ...contentWrite },
       defaultSort: "-date",
       fields: [
         { name: "title", type: "text", required: true },
@@ -559,7 +738,7 @@ export default buildConfig({
         defaultColumns: ["name", "role"],
         description: "Bylines for blog articles — name, role, short bio and photo.",
       },
-      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: () => true, ...contentWrite },
       fields: [
         { name: "name", type: "text", required: true },
         { name: "role", type: "text", admin: { description: "e.g. Lead Engineer, Founder" } },
@@ -576,7 +755,7 @@ export default buildConfig({
         group: "Enquiries",
       },
       // Submitted by the public contact form; only admins can read/manage.
-      access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { create: () => true, read: adminOnly, update: canWrite("sales"), delete: superOnly },
       hooks: {
         beforeChange: [
           ({ data, operation }) => {
@@ -642,7 +821,7 @@ export default buildConfig({
         defaultColumns: ["code", "partner", "active", "timesUsed"],
         description: "Trackable ?ref= codes for partners and referrers. Share syberinfo.com.au/?ref=CODE.",
       },
-      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: adminOnly, ...salesWrite },
       hooks: {
         beforeValidate: [
           ({ data }) => {
@@ -670,7 +849,7 @@ export default buildConfig({
         defaultColumns: ["refCode", "name", "status", "createdAt"],
         description: "Each lead that arrived via a referral code. Mark rewarded once paid out.",
       },
-      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: adminOnly, ...salesWrite },
       fields: [
         { name: "refCode", type: "text", required: true, admin: { description: "The code used (snapshot)." } },
         { name: "code", type: "relationship", relationTo: "referral-codes" },
@@ -694,7 +873,7 @@ export default buildConfig({
         defaultColumns: ["name", "category", "priceAnnual", "order"],
         group: "Content",
       },
-      access: { read: () => true },
+      access: { read: () => true, ...contentWrite },
       defaultSort: "order",
       fields: [
         {
@@ -752,7 +931,7 @@ export default buildConfig({
         defaultColumns: ["name", "order"],
         group: "Content",
       },
-      access: { read: () => true },
+      access: { read: () => true, ...contentWrite },
       defaultSort: "order",
       fields: [
         { name: "name", type: "text", required: true },
@@ -773,7 +952,7 @@ export default buildConfig({
         defaultColumns: ["question", "category", "order"],
         group: "Content",
       },
-      access: { read: () => true },
+      access: { read: () => true, ...contentWrite },
       defaultSort: "order",
       fields: [
         { name: "question", type: "text", required: true },
@@ -790,7 +969,7 @@ export default buildConfig({
         defaultColumns: ["email", "source", "createdAt"],
         group: "Enquiries",
       },
-      access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { create: () => true, read: adminOnly, update: superOnly, delete: superOnly },
       fields: [
         { name: "email", type: "email", required: true, unique: true },
         {
@@ -804,7 +983,7 @@ export default buildConfig({
       slug: "media",
       labels: { singular: "Media", plural: "Media" },
       admin: { group: "Content" },
-      access: { read: () => true },
+      access: { read: () => true, ...contentWrite },
       upload: {
         // Persist uploads outside the build output in production. Set MEDIA_DIR
         // to an absolute path on the server (see DEPLOY.md) so files survive
@@ -827,7 +1006,7 @@ export default buildConfig({
         defaultColumns: ["title", "category", "order"],
         group: "Content",
       },
-      access: { read: () => true },
+      access: { read: () => true, ...contentWrite },
       defaultSort: "order",
       fields: [
         { name: "title", type: "text", required: true },
@@ -851,7 +1030,7 @@ export default buildConfig({
         defaultColumns: ["title", "industry", "order"],
         group: "Content",
       },
-      access: { read: () => true },
+      access: { read: () => true, ...contentWrite },
       defaultSort: "order",
       fields: [
         { name: "title", type: "text", required: true },
@@ -892,7 +1071,7 @@ export default buildConfig({
         defaultColumns: ["email", "type", "status", "createdAt"],
         group: "Enquiries",
       },
-      access: { create: () => true, read: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { create: () => true, read: adminOnly, update: superOnly, delete: superOnly },
       fields: [
         { name: "email", type: "email", required: true },
         {
@@ -943,10 +1122,16 @@ export default buildConfig({
         listSearchableFields: ["name", "company", "email", "phone"],
       },
       access: {
+        // A customer edits their own record; staff who touch clients
+        // (technicians + sales) manage all clients; only super-admins delete.
         read: adminOrSelf,
-        update: adminOrSelf,
-        create: adminOnly, // public sign-up goes through /api/portal/register (rate-limited)
-        delete: adminOnly,
+        update: ({ req }) => {
+          const u = req.user as AuthedUser;
+          if (u?.collection === "customers") return { id: { equals: u.id } };
+          return canWrite("technician", "sales")({ req } as Parameters<Access>[0]);
+        },
+        create: canWrite("technician", "sales"), // public sign-up goes through /api/portal/register (rate-limited)
+        delete: superOnly,
       },
       hooks: {
         afterChange: [
@@ -1078,7 +1263,7 @@ export default buildConfig({
       slug: "orders",
       labels: { singular: "Order", plural: "Orders" },
       admin: { useAsTitle: "id", group: "Billing", defaultColumns: ["customer", "total", "status", "createdAt"] },
-      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: ownerAccess(), ...salesWrite },
       fields: [
         { name: "customer", type: "relationship", relationTo: "customers" },
         {
@@ -1104,7 +1289,7 @@ export default buildConfig({
       slug: "subscriptions",
       labels: { singular: "Service", plural: "Services (Subscriptions)" },
       admin: { useAsTitle: "label", group: "Billing", defaultColumns: ["label", "customer", "status", "nextDueDate"] },
-      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: ownerAccess(), ...serviceWrite },
       hooks: {
         beforeChange: [
           ({ data, operation }) => {
@@ -1145,7 +1330,7 @@ export default buildConfig({
         defaultColumns: ["description", "customer", "quantity", "amount", "billed"],
         description: "Metered usage (per-seat overages, cloud resell, support hours). Unbilled records are rolled into the next renewal invoice.",
       },
-      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: ownerAccess(), ...serviceWrite },
       hooks: {
         beforeChange: [
           ({ data }) => {
@@ -1171,7 +1356,7 @@ export default buildConfig({
       slug: "invoices",
       labels: { singular: "Invoice", plural: "Invoices" },
       admin: { useAsTitle: "number", group: "Billing", defaultColumns: ["number", "customer", "total", "status", "dueDate"] },
-      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: ownerAccess(), ...salesWrite },
       hooks: {
         beforeChange: [
           async ({ data, operation, req }) => {
@@ -1237,7 +1422,7 @@ export default buildConfig({
       slug: "transactions",
       labels: { singular: "Transaction", plural: "Transactions" },
       admin: { useAsTitle: "reference", group: "Billing", defaultColumns: ["reference", "customer", "amount", "status"] },
-      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: ownerAccess(), ...salesWrite },
       fields: [
         { name: "reference", type: "text" },
         { name: "invoice", type: "relationship", relationTo: "invoices" },
@@ -1256,7 +1441,7 @@ export default buildConfig({
       slug: "client-domains",
       labels: { singular: "Domain", plural: "Domains" },
       admin: { useAsTitle: "domain", group: "Billing", defaultColumns: ["domain", "customer", "expiryDate", "status"] },
-      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: ownerAccess(), ...serviceWrite },
       fields: [
         { name: "domain", type: "text", required: true },
         { name: "customer", type: "relationship", relationTo: "customers" },
@@ -1281,7 +1466,7 @@ export default buildConfig({
         defaultColumns: ["name", "customer", "category", "renewalDate", "status"],
         description: "Hardware, software and licenses per client — with renewal dates for reminders and upsell.",
       },
-      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: ownerAccess(), ...serviceWrite },
       hooks: {
         beforeChange: [
           ({ data }) => {
@@ -1332,7 +1517,7 @@ export default buildConfig({
         group: "Billing",
         defaultColumns: ["subject", "customer", "status", "priority", "slaDueAt"],
       },
-      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: ownerAccess(), ...serviceWrite },
       hooks: {
         beforeChange: [
           ({ data, operation }) => {
@@ -1433,7 +1618,7 @@ export default buildConfig({
       slug: "coupons",
       labels: { singular: "Coupon", plural: "Coupons" },
       admin: { useAsTitle: "code", group: "Billing", defaultColumns: ["code", "type", "value", "active"] },
-      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: adminOnly, ...contentWrite },
       fields: [
         { name: "code", type: "text", required: true, unique: true },
         {
@@ -1458,7 +1643,7 @@ export default buildConfig({
         defaultColumns: ["title", "slug", "updatedAt"],
         description: "Privacy, Terms, etc. Fill the body to override the built-in page text.",
       },
-      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: () => true, ...contentWrite },
       fields: [
         { name: "title", type: "text", required: true },
         {
@@ -1483,7 +1668,7 @@ export default buildConfig({
         group: "Content",
         defaultColumns: ["title", "slug", "order"],
       },
-      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: () => true, ...contentWrite },
       defaultSort: "order",
       fields: [
         { name: "title", type: "text", required: true },
@@ -1526,7 +1711,7 @@ export default buildConfig({
         group: "Billing",
         defaultColumns: ["number", "prospectName", "total", "status", "validUntil"],
       },
-      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: adminOnly, ...salesWrite },
       hooks: {
         beforeChange: [
           async ({ data, operation, req }) => {
@@ -1597,7 +1782,7 @@ export default buildConfig({
         defaultColumns: ["name", "status", "order"],
         description: "Services shown on the public status page.",
       },
-      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: () => true, ...serviceWrite },
       defaultSort: "order",
       fields: [
         { name: "name", type: "text", required: true },
@@ -1626,7 +1811,7 @@ export default buildConfig({
         defaultColumns: ["title", "severity", "status", "startedAt"],
         description: "Incidents & maintenance shown on the public status page.",
       },
-      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: () => true, ...serviceWrite },
       defaultSort: "-startedAt",
       hooks: {
         beforeChange: [
@@ -1731,7 +1916,7 @@ export default buildConfig({
         defaultColumns: ["customer", "status", "updatedAt"],
         description: "New-client onboarding checklists. Auto-created when a customer is added.",
       },
-      access: { read: ownerAccess(), create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: ownerAccess(), ...serviceWrite },
       fields: [
         { name: "customer", type: "relationship", relationTo: "customers" },
         {
@@ -1761,7 +1946,7 @@ export default buildConfig({
         description: "People subscribed to incident/maintenance email alerts.",
       },
       // Public create goes through the rate-limited /api/status/subscribe route.
-      access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: adminOnly, ...contentWrite },
       fields: [
         { name: "email", type: "email", required: true, unique: true },
         { name: "confirmed", type: "checkbox", defaultValue: true },
@@ -1777,7 +1962,7 @@ export default buildConfig({
         defaultColumns: ["from", "to", "permanent", "active"],
         description: "301/302 redirects enforced site-wide. Protects SEO when URLs change.",
       },
-      access: { read: () => true, create: adminOnly, update: adminOnly, delete: adminOnly },
+      access: { read: () => true, ...contentWrite },
       fields: [
         {
           name: "from",
@@ -1801,13 +1986,13 @@ export default buildConfig({
         { name: "active", type: "checkbox", defaultValue: true },
       ],
     },
-  ],
+  ]),
   globals: [
     {
       slug: "site-content",
       label: "Homepage Content",
       admin: { group: "Content" },
-      access: { read: () => true },
+      access: { read: () => true, update: superOnly },
       fields: [
         {
           name: "stats",
@@ -1862,7 +2047,7 @@ export default buildConfig({
       slug: "page-content",
       label: "Page Headers",
       admin: { group: "Content", description: "Eyebrow / heading / subheading for the top of each marketing page." },
-      access: { read: () => true, update: adminOnly },
+      access: { read: () => true, update: superOnly },
       fields: [
         {
           name: "headers",
@@ -1919,7 +2104,7 @@ export default buildConfig({
       slug: "site-settings",
       label: "Site Settings",
       admin: { group: "Content", description: "Brand, contact details, socials and footer — used site-wide." },
-      access: { read: () => true, update: adminOnly },
+      access: { read: () => true, update: superOnly },
       fields: [
         {
           type: "collapsible",
@@ -1979,7 +2164,7 @@ export default buildConfig({
       slug: "billing-settings",
       label: "Billing Settings",
       admin: { group: "Billing" },
-      access: { read: adminOnly, update: adminOnly },
+      access: { read: adminOnly, update: superOnly },
       fields: [
         { name: "companyLegalName", type: "text", defaultValue: "SyberInfo" },
         { name: "abn", type: "text" },
