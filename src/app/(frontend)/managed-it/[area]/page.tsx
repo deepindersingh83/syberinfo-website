@@ -62,10 +62,24 @@ export default async function AreaPage({ params }: Params) {
     name: `SyberInfo — Managed IT ${a.city}`,
     url: `${site.url}/managed-it/${a.slug}`,
     description: `Managed IT, cloud and cybersecurity for ${a.city}, ${a.state}.`,
-    areaServed: { "@type": "City", name: a.city },
+    areaServed: {
+      "@type": "City",
+      name: a.city,
+      ...(a.postcode ? { postalCode: a.postcode } : {}),
+    },
     address: { "@type": "PostalAddress", addressLocality: a.city, addressRegion: a.state, addressCountry: "AU" },
-    telephone: site.phone,
+    ...(a.geo ? { geo: { "@type": "GeoCoordinates", latitude: a.geo.lat, longitude: a.geo.lng } } : {}),
+    telephone: site.phoneIntl,
     email: site.email,
+    priceRange: site.local.priceRange,
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        opens: "09:00",
+        closes: "19:00",
+      },
+    ],
   };
 
   return (
