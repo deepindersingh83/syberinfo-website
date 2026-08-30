@@ -68,6 +68,17 @@ export const metadata: Metadata = {
     images: [ogImage("IT that quietly runs while you build", "SyberInfo")],
   },
   alternates: { canonical: site.url },
+  // Google Search Console site verification. Set NEXT_PUBLIC_GSC_VERIFICATION
+  // to the token from Search Console → Settings → Ownership verification →
+  // HTML tag (the content="" value). Bing works the same via `other`.
+  verification: process.env.NEXT_PUBLIC_GSC_VERIFICATION
+    ? {
+        google: process.env.NEXT_PUBLIC_GSC_VERIFICATION,
+        ...(process.env.NEXT_PUBLIC_BING_VERIFICATION
+          ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_VERIFICATION } }
+          : {}),
+      }
+    : undefined,
 };
 
 export default async function RootLayout({
