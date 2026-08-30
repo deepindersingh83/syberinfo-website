@@ -69,6 +69,7 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
+    'audit-logs': AuditLog;
     services: Service;
     products: Product;
     software: Software;
@@ -122,6 +123,7 @@ export interface Config {
   };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     services: ServicesSelect<false> | ServicesSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     software: SoftwareSelect<false> | SoftwareSelect<true>;
@@ -225,12 +227,18 @@ export interface CustomerAuthOperations {
   };
 }
 /**
+ * Staff accounts. Roles control what each team member can change. Only super-admins can add users or change roles.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
   id: number;
   name?: string | null;
+  /**
+   * superadmin = full access · technician = support & service delivery · sales = leads, quotes, invoices · readonly = view only
+   */
+  role: 'superadmin' | 'technician' | 'sales' | 'readonly';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -249,6 +257,23 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
+}
+/**
+ * Who changed what, and when. Written automatically; read-only, super-admins only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs".
+ */
+export interface AuditLog {
+  id: number;
+  action?: ('create' | 'update' | 'delete') | null;
+  collectionSlug?: string | null;
+  documentId?: string | null;
+  documentLabel?: string | null;
+  user?: (number | null) | User;
+  userEmail?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1596,6 +1621,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'audit-logs';
+        value: number | AuditLog;
+      } | null)
+    | ({
         relationTo: 'services';
         value: number | Service;
       } | null)
@@ -1793,6 +1822,7 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1809,6 +1839,20 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs_select".
+ */
+export interface AuditLogsSelect<T extends boolean = true> {
+  action?: T;
+  collectionSlug?: T;
+  documentId?: T;
+  documentLabel?: T;
+  user?: T;
+  userEmail?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
