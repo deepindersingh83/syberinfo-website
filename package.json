@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "payload migrate",
     "build": "next build",
     "postbuild": "node scripts/postbuild.mjs",
     "start": "next start",

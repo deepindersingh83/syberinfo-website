@@ -11,6 +11,7 @@ import CookieConsent from "@/components/CookieConsent";
 import Attribution from "@/components/Attribution";
 import { site, ogImage } from "@/lib/site";
 import { getSettings } from "@/lib/settings";
+import { getReviewStats } from "@/lib/content";
 
 const display = Bricolage_Grotesque({
   variable: "--font-display",
@@ -67,31 +68,79 @@ export const metadata: Metadata = {
     images: [ogImage("IT that quietly runs while you build", "SyberInfo")],
   },
   alternates: { canonical: site.url },
+  // Google Search Console site verification. Set NEXT_PUBLIC_GSC_VERIFICATION
+  // to the token from Search Console → Settings → Ownership verification →
+  // HTML tag (the content="" value). Bing works the same via `other`.
+  verification: process.env.NEXT_PUBLIC_GSC_VERIFICATION
+    ? {
+        google: process.env.NEXT_PUBLIC_GSC_VERIFICATION,
+        ...(process.env.NEXT_PUBLIC_BING_VERIFICATION
+          ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_VERIFICATION } }
+          : {}),
+      }
+    : undefined,
 };
 
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const s = await getSettings();
+  const [s, reviewStats] = await Promise.all([getSettings(), getReviewStats()]);
+  const L = site.local;
+  const hasRealAbn = s.abn && !/^[0\s]+$/.test(s.abn);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": ["ProfessionalService", "LocalBusiness"],
+    "@id": `${site.url}/#business`,
     name: s.name,
     url: site.url,
+    logo: `${site.url}/icon.png`,
+    image: ogImage(s.name, "Managed IT"),
     email: s.email,
-    telephone: s.phone,
+    telephone: s.phoneIntl || s.phone,
     description: s.description,
-    areaServed: "AU",
-    address: { "@type": "PostalAddress", streetAddress: s.address || undefined, addressCountry: "AU" },
-    identifier: { "@type": "PropertyValue", propertyID: "ABN", value: s.abn },
+    priceRange: L.priceRange,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: L.suburb,
+      addressRegion: L.state,
+      postalCode: L.postcode,
+      addressCountry: "AU",
+    },
+    geo: { "@type": "GeoCoordinates", latitude: L.geo.lat, longitude: L.geo.lng },
+    hasMap: `https://www.google.com/maps/search/?api=1&query=${L.geo.lat},${L.geo.lng}`,
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        opens: "09:00",
+        closes: "19:00",
+      },
+    ],
+    areaServed: [
+      { "@type": "City", name: "Melbourne" },
+      { "@type": "AdministrativeArea", name: L.stateFull },
+      { "@type": "Country", name: "Australia" },
+    ],
+    ...(hasRealAbn ? { identifier: { "@type": "PropertyValue", propertyID: "ABN", value: s.abn } } : {}),
     sameAs: [s.social.linkedin, s.social.twitter, s.social.github, s.social.facebook, s.social.instagram].filter(Boolean),
+    ...(reviewStats
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: reviewStats.average,
+            reviewCount: reviewStats.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
     makesOffer: [
       "Managed IT & Support",
       "Cloud & Infrastructure",
       "Cybersecurity",
+      "Website Development",
+      "SEO & Digital Marketing",
       "Backup & Recovery",
-      "Networks & VoIP",
-      "IT Strategy & vCIO",
     ].map((name) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name } })),
   };
   return (
