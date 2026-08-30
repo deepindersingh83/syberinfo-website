@@ -42,14 +42,14 @@ function fallback(): Settings {
     phoneIntl: site.phoneIntl,
     address: site.address,
     abn: site.abn,
-    hours: "",
+    hours: site.local.hoursHuman,
     whatsapp: site.whatsapp,
     social: {
       linkedin: site.social.linkedin,
       twitter: site.social.twitter,
       github: site.social.github,
-      facebook: "",
-      instagram: "",
+      facebook: site.social.facebook,
+      instagram: site.social.instagram,
     },
     footerColumns: footerCols.map((c) => ({ heading: c.head, links: c.links.map((l) => ({ label: l.label, href: l.href })) })),
   };
